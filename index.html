@@ -246,6 +246,65 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
  .left-panel,.right-panel{display:block}
 }
 
+
+
+/* BARCHALOR VISUAL REFINEMENT — red and white brand preserved */
+:root{
+  --red:#d91f43;
+  --brand-deep:#a91635;
+  --brand-soft:#fff0f3;
+  --bg:#fff8f9;
+  --text:#281b20;
+  --muted:#786b70;
+  --line:#f1dfe3;
+  --shadow:0 8px 28px rgba(117,24,47,.075);
+}
+body{background:linear-gradient(180deg,#fff 0,#fff7f8 340px,#fff9fa 100%);color:var(--text)}
+header{min-height:76px;padding:11px clamp(14px,4vw,54px);border-bottom:1px solid #f3dce1;box-shadow:0 5px 22px rgba(113,25,46,.055)}
+.logo{color:var(--brand-deep);letter-spacing:-1.1px}
+.logo:before{background:linear-gradient(145deg,#f76c83,#c9143b);box-shadow:0 7px 18px rgba(217,31,67,.2)}
+#app .layout{gap:20px;padding-top:22px;padding-bottom:48px}
+.panel,.composer,.post,#chatPanel{border:1px solid var(--line);box-shadow:var(--shadow)}
+.panel{border-radius:18px}
+.panel h3,.composer h3{color:var(--brand-deep);letter-spacing:-.25px}
+.composer,.post,#chatPanel{border-radius:19px}
+.composer textarea,.profile-form input,.profile-form textarea,.chat-search-row input,.chat-compose textarea,.comment-form input{transition:border-color .18s,box-shadow .18s}
+.composer textarea:focus,.profile-form input:focus,.profile-form textarea:focus,.chat-search-row input:focus,.chat-compose textarea:focus,.comment-form input:focus{outline:none;border-color:#e77b91;box-shadow:0 0 0 3px rgba(217,31,67,.09)}
+.primary{background:linear-gradient(120deg,#ed536d,#c9163c);box-shadow:0 5px 14px rgba(201,22,60,.18);transition:transform .16s,box-shadow .16s,filter .16s}
+.primary:hover{filter:brightness(1.04);box-shadow:0 7px 18px rgba(201,22,60,.23);transform:translateY(-1px)}
+.secondary,.profile-trigger,.notification-button{transition:background .16s,border-color .16s,transform .16s}
+.secondary:hover,.profile-trigger:hover,.notification-button:hover{background:#ffe5ea;border-color:#edb9c4}
+.post{transition:box-shadow .18s,border-color .18s}
+.post:hover{box-shadow:0 10px 32px rgba(117,24,47,.095);border-color:#edcbd3}
+.post-head .muted{margin-top:2px}
+.post-actions button{transition:background .15s,color .15s}
+.post-actions button:hover{background:#ffe6eb;color:var(--brand-deep)}
+.post-actions button.liked{background:#ffe1e7;color:#b91639}
+.comment-form input{background:#fffafb}
+#quickChatNav{max-width:1420px}
+#quickChatNav button{transition:transform .16s,box-shadow .16s,background .16s}
+#quickChatNav button:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(201,22,60,.1)}
+.chat-window{border-color:#f0dce1}
+.chat-header{background:#fff2f4}
+.chat-messages{background:linear-gradient(180deg,#fff9fa,#fff4f6)}
+.bubble.mine{background:linear-gradient(135deg,#e94b68,#c9163c);border-color:#d92a49;box-shadow:0 3px 8px rgba(201,22,60,.12)}
+.notification-panel,.profile-modal{box-shadow:0 18px 55px rgba(83,20,36,.18)}
+button:focus-visible,a:focus-visible{outline:3px solid #f29aaa;outline-offset:3px}
+::selection{background:#ffd6df;color:#86132d}
+@media(min-width:1051px){#quickChatNav{display:none}}
+@media(max-width:760px){#app .layout{padding-top:13px;gap:13px}.left-panel,.right-panel{display:none}}
+@media(max-width:600px){
+ header{min-height:66px;padding:9px 12px}
+ .logo{font-size:22px}
+ .logo:before{width:36px;height:36px;font-size:26px;border-radius:12px}
+ #quickChatNav{top:0;padding:8px 9px;gap:7px;border-radius:0 0 15px 15px}
+ #quickChatNav button{border-radius:13px;font-size:12px;padding:10px 6px}
+ .layout,#app .layout{padding:12px 9px 28px}
+ .composer,.post,#chatPanel{border-radius:16px;box-shadow:0 4px 18px rgba(117,24,47,.06)}
+ .post-actions button{border-radius:10px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
