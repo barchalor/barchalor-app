@@ -416,6 +416,31 @@ body.chat-page-open #chatPanel:has(#chatWindow:not([hidden])) #chatWindow{width:
  body.chat-page-open #sendChatButton{height:42px;min-width:44px;padding:0 15px}
 }
 
+
+/* Final fixes: vertical inbox and reliable return navigation */
+body.chat-page-open #conversationList{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  gap:10px!important;overflow-y:auto!important;overflow-x:hidden!important;
+  width:min(100%,1080px)!important;max-height:none!important;
+  padding:10px 18px 24px!important;box-sizing:border-box;
+}
+body.chat-page-open .conversation-item{
+  display:flex!important;flex:initial!important;width:100%!important;min-width:0!important;
+  max-width:none!important;min-height:70px;padding:12px 14px!important;
+  border-radius:15px!important;box-sizing:border-box;
+}
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>.chat-search-row,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#chatStatus,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#memberResults,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>h4,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#conversationList{display:none!important}
+body.chat-page-open #chatPanel:has(#chatWindow[hidden])>#conversationList{display:grid!important}
+body.chat-page-open #backToFeedButton{white-space:nowrap;min-width:max-content}
+@media(max-width:700px){
+ body.chat-page-open #conversationList{padding:8px 12px 22px!important;gap:9px!important}
+ body.chat-page-open .conversation-item{min-height:68px;padding:11px!important}
+}
+
 </style>
 </head>
 <body>
@@ -478,6 +503,19 @@ Thank you for believing in us.</div><div class="announcement-footer"><button id=
 <div id="profileModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle"><section class="profile-modal"><div class="modal-title"><h2 id="profileModalTitle">My profile</h2><button id="closeProfile" class="icon-close" type="button" aria-label="Close">✕</button></div><div class="profile-modal-tabs" role="tablist" aria-label="Profile menu"><button type="button" id="profileTabButton" class="profile-tab active" role="tab" aria-selected="true">👤 Profile</button><button type="button" id="settingsTabButton" class="profile-tab" role="tab" aria-selected="false">⚙️ Settings</button></div><div id="profileTabContent" class="profile-tab-content"><div class="profile-card"><div id="profileAvatarPreview" class="avatar profile-big">?</div><div><strong id="profilePreviewName">Your name</strong><div id="profilePreviewUsername" class="muted">@username</div><div id="profilePreviewBio" class="bio-text">Add a short bio about yourself.</div></div></div><form id="profileForm" class="profile-form"><label>Profile picture<input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label><div class="muted">JPG, PNG, WEBP or GIF; maximum 5 MB.</div><button id="removeAvatar" class="secondary" type="button">Remove profile picture</button><label>Display name<input id="displayNameInput" maxlength="60" required placeholder="Your display name"></label><label>Username<input id="usernameInput" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required placeholder="letters, numbers and underscore"></label><label>Bio<textarea id="bioInput" maxlength="180" placeholder="Tell people a little about yourself"></textarea></label><div id="profileStatus" class="chat-status" role="status"></div><button id="saveProfile" class="primary" type="submit">Save profile</button></form></div><section id="settingsTabContent" class="profile-tab-content" hidden><h3 class="settings-heading">Settings</h3><p class="muted settings-intro">Manage your Barchalor account and app preferences.</p><div class="settings-row"><div><strong>Signed-in account</strong><p id="settingsEmail" class="muted">Your account email</p></div><span>🔐</span></div><div class="settings-row"><div><strong>Appearance</strong><p class="muted">Light red and white theme</p></div><span class="theme-chip">Light</span></div><div class="settings-row"><div><strong>Private chats</strong><p class="muted">Your conversations are shown in the Private Chat section.</p></div><span>💬</span></div><div class="settings-note">Keep your password private. Barchalor will never ask you to share your password in a chat.</div><button id="logout" class="secondary settings-logout" type="button" onclick="logout()">Log out</button><button id="settingsDoneButton" class="primary settings-done" type="button">Done</button></section></section></div>
 <script>
 
+// Return from an individual conversation to the private-message directory.
+function returnToConversationList(){
+  stopMessageRealtime();
+  const win=document.getElementById('chatWindow');
+  if(win) win.hidden=true;
+  document.body.classList.remove('chat-conversation-open');
+  const back=document.getElementById('backToFeedButton');
+  if(back) back.textContent='← Feed';
+  const status=document.getElementById('chatStatus');
+  if(status) status.textContent='Choose a conversation or search for another member.';
+  loadConversations();
+}
+
 // Dedicated private-chat page: feed stays separate from conversations.
 function openPrivateChatPage(){
   document.body.classList.add('chat-page-open');
@@ -499,7 +537,10 @@ document.getElementById('headerMessengerButton')?.addEventListener('click',()=>{
   if(document.body.classList.contains('chat-page-open')) closePrivateChatPage();
   else openPrivateChatPage();
 });
-document.getElementById('backToFeedButton')?.addEventListener('click',closePrivateChatPage);
+document.getElementById('backToFeedButton')?.addEventListener('click',()=>{
+  if(document.body.classList.contains('chat-conversation-open')) returnToConversationList();
+  else closePrivateChatPage();
+});
 document.getElementById('privateChatNavButton')?.addEventListener('click',openPrivateChatPage);
 document.getElementById('feedNavButton')?.addEventListener('click',()=>{closePrivateChatPage();window.scrollTo({top:0,behavior:'smooth'});});
 
@@ -764,7 +805,7 @@ $('searchButton').addEventListener('click',searchMembers);$('memberSearch').addE
 async function searchMembers(){if(!currentUser)return;const term=$('memberSearch').value.trim();$('memberResults').replaceChildren();if(term.length<2){$('chatStatus').textContent='Enter at least 2 letters to search.';return}$('chatStatus').textContent='Searching members...';try{const safe=term.replace(/[,%()]/g,' ').trim();const {data,error}=await db.from('profiles').select('id,username,display_name,avatar_url,bio').neq('id',currentUser.id).or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`).limit(15);if(error)throw error;if(!data?.length){$('chatStatus').textContent='No members found. They may need to sign in once to create their profile.';return}$('chatStatus').textContent='Select a member to start a private chat.';for(const person of data){const button=document.createElement('button');button.type='button';button.className='member-result';const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const strong=document.createElement('strong');strong.textContent=person.display_name||person.username;const sub=document.createElement('span');sub.textContent='@'+person.username;meta.append(strong,sub);const start=document.createElement('span');start.textContent='Message ›';start.className='muted';button.append(av,meta,start);button.addEventListener('click',()=>startChat(person));$('memberResults').append(button)}}catch(error){$('chatStatus').textContent='Member search failed: '+error.message}}
 async function startChat(person){$('chatStatus').textContent='Opening private chat...';try{const {data,error}=await db.rpc('start_private_chat',{other_user_id:person.id});if(error)throw error;activeOtherUser=person;activeConversationId=data;await loadConversations();await openConversation(data,person)}catch(error){$('chatStatus').textContent='Could not start chat: '+error.message+'. The secure start_private_chat database function may not have been created successfully.'}}
 async function loadConversations(){if(!currentUser)return;const box=$('conversationList');box.replaceChildren();const {data:members,error}=await db.from('conversation_members').select('conversation_id,joined_at').eq('user_id',currentUser.id).order('joined_at',{ascending:false}).limit(100);if(error){box.textContent='Could not load conversations: '+error.message;return}if(!members?.length){box.innerHTML='<div class="chat-empty">No conversations yet. Search for a member above to start one.</div>';return}const ids=members.map(m=>m.conversation_id);const {data:allMembers,error:me}=await db.from('conversation_members').select('conversation_id,user_id').in('conversation_id',ids);if(me){box.textContent='Could not load conversation members: '+me.message;return}const others=(allMembers||[]).filter(m=>m.user_id!==currentUser.id);const otherIds=[...new Set(others.map(m=>m.user_id))];const {data:profiles,error:pe}=otherIds.length?await db.from('profiles').select('id,username,display_name,avatar_url,bio').in('id',otherIds):{data:[],error:null};if(pe){box.textContent='Could not load member names: '+pe.message;return}const pmap=new Map((profiles||[]).map(p=>[p.id,p]));for(const m of members){const other=others.find(x=>x.conversation_id===m.conversation_id);const person=pmap.get(other?.user_id)||{id:other?.user_id,username:'member',display_name:'Barchalor member'};const button=document.createElement('button');button.type='button';button.className='conversation-item'+(String(activeConversationId)===String(m.conversation_id)?' active':'');const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const name=document.createElement('strong');name.textContent=person.display_name||person.username;const sub=document.createElement('span');sub.textContent='@'+(person.username||'member');meta.append(name,sub);button.append(av,meta);button.addEventListener('click',()=>openConversation(m.conversation_id,person));box.append(button)}}
-async function openConversation(conversationId,person){activeConversationId=conversationId;activeOtherUser=person;stopMessageRealtime();$('chatWindow').hidden=false;$('chatHeader').replaceChildren();const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const name=document.createElement('strong');name.textContent=person.display_name||person.username||'Barchalor member';const username=document.createElement('span');username.textContent='@'+(person.username||'member');meta.append(name,username);const refresh=document.createElement('button');refresh.className='small-button';refresh.type='button';refresh.textContent='Refresh';refresh.addEventListener('click',loadActiveMessages);const sendCoin=document.createElement('button');sendCoin.type='button';sendCoin.className='chat-qcoin-send';sendCoin.textContent='🪙 Send 1 Q';sendCoin.addEventListener('click',()=>sendQCoinToChatMember(sendCoin));$('chatHeader').append(av,meta,sendCoin,refresh);await loadActiveMessages();startMessageRealtime();await loadConversations();$('chatStatus').textContent='Private chat with '+(person.display_name||person.username||'member')+'.'}
+async function openConversation(conversationId,person){activeConversationId=conversationId;activeOtherUser=person;stopMessageRealtime();document.body.classList.add('chat-conversation-open');const backButton=$('backToFeedButton');if(backButton)backButton.textContent='← Conversations';$('chatWindow').hidden=false;$('chatHeader').replaceChildren();const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const name=document.createElement('strong');name.textContent=person.display_name||person.username||'Barchalor member';const username=document.createElement('span');username.textContent='@'+(person.username||'member');meta.append(name,username);const refresh=document.createElement('button');refresh.className='small-button';refresh.type='button';refresh.textContent='Refresh';refresh.addEventListener('click',loadActiveMessages);const sendCoin=document.createElement('button');sendCoin.type='button';sendCoin.className='chat-qcoin-send';sendCoin.textContent='🪙 Send 1 Q';sendCoin.addEventListener('click',()=>sendQCoinToChatMember(sendCoin));$('chatHeader').append(av,meta,sendCoin,refresh);await loadActiveMessages();startMessageRealtime();await loadConversations();$('chatStatus').textContent='Private chat with '+(person.display_name||person.username||'member')+'.'}
 async function sendQCoinToChatMember(button){
   if(!currentUser||!activeOtherUser||!activeConversationId)return;
   if(button.disabled)return;
