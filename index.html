@@ -695,7 +695,7 @@ async function enablePushNotifications() {
   }
 }
 
-let feedOffset=0,feedPageSize=20,feedLoading=false,feedHasMore=true,feedRefreshTimer=null,rankedFeedQueue=[];
+let feedOffset=0,feedPageSize=20,feedBatchSize=100,feedLoading=false,feedHasMore=true,feedRefreshTimer=null,rankedFeedQueue=[];
 let currentUser=null,signingUp=false,busy=false,likedPosts=new Set(),activeConversationId=null,activeOtherUser=null,messageChannel=null,refreshingMessages=false,presenceChannel=null,postChannel=null,postRefreshTimer=null,onlineUserIds=new Set(),myProfile=null,notificationChannel=null,notificationItems=[];
 const $=id=>document.getElementById(id); const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
 function showStatus(message,error=false){$('status').textContent=message;$('status').style.color=error?'#b42318':'#167d43'}
@@ -849,13 +849,17 @@ function rankPersonalizedFeed(posts,likes,comments){
 async function loadFeed(reset=true){
  if(!currentUser||feedLoading)return;
  if(reset){feedOffset=0;feedHasMore=true;rankedFeedQueue=[];$('feed').replaceChildren();$('feedStatus').textContent='Finding posts you may like...';}
- if(!feedHasMore){$('feedStatus').textContent='';return}
+ if(!feedHasMore&&!rankedFeedQueue.length){$('feedStatus').textContent='You are all caught up. New posts will appear here as members share them.';return}
  feedLoading=true;
  try{
-  if(reset||!rankedFeedQueue.length){
-   const {data:posts,error}=await db.from('posts').select('id,user_id,content,image_url,created_at').order('created_at',{ascending:false}).limit(100);
+  // Fetch another database batch whenever the current ranked batch is used up.
+  if(!rankedFeedQueue.length&&feedHasMore){
+   const from=feedOffset,to=feedOffset+feedBatchSize-1;
+   const {data:posts,error}=await db.from('posts').select('id,user_id,content,image_url,created_at').order('created_at',{ascending:false}).range(from,to);
    if(error)throw error;
-   if(!posts?.length){feedHasMore=false;$('feedStatus').textContent='No posts yet. Be the first to share something!';return}
+   feedOffset+=posts?.length||0;
+   feedHasMore=(posts?.length||0)===feedBatchSize;
+   if(!posts?.length){feedHasMore=false;if(!$('feed').children.length)$('feedStatus').textContent='No posts yet. Be the first to share something!';else $('feedStatus').textContent='You are all caught up. New posts will appear here as members share them.';return}
    const postIds=posts.map(p=>p.id);
    const [{data:likes,error:le},{data:comments,error:ce}]=await Promise.all([
     db.from('post_likes').select('post_id,user_id').in('post_id',postIds),
@@ -866,14 +870,17 @@ async function loadFeed(reset=true){
    rankedFeedQueue=rankPersonalizedFeed(posts,likes||[],comments||[]);
   }
   const page=rankedFeedQueue.splice(0,feedPageSize);
-  if(!page.length){feedHasMore=false;$('feedStatus').textContent='';return}
+  if(!page.length){$('feedStatus').textContent=feedHasMore?'Loading more posts...':'You are all caught up. New posts will appear here as members share them.';return}
   const ids=[...new Set(page.map(p=>p.user_id))];
   const {data:profiles,error:pe}=await db.from('profiles').select('id,username,display_name,avatar_url,bio').in('id',ids);if(pe)throw pe;
   const pmap=new Map((profiles||[]).map(p=>[p.id,p]));
   const {data:likes,error:le}=await db.from('post_likes').select('post_id,user_id').in('post_id',page.map(p=>p.id));if(le)throw le;
   for(const post of page)renderPost(post,pmap.get(post.user_id),(likes||[]).filter(l=>String(l.post_id)===String(post.id)).length);
-  rememberSeenPosts(page);feedOffset+=page.length;feedHasMore=rankedFeedQueue.length>0;$('feedStatus').textContent='';
- }catch(error){$('feedStatus').textContent='Could not load posts: '+(error.message||'Please try again.')}finally{feedLoading=false}
+  rememberSeenPosts(page);$('feedStatus').textContent='';
+  // If the next batch is needed to fill the screen, keep loading without a manual button.
+  requestAnimationFrame(()=>{if(!document.body.classList.contains('chat-page-open'))maybeLoadMoreFeed()});
+ }catch(error){$('feedStatus').textContent='Could not load posts: '+(error.message||'Please try again.')}
+ finally{feedLoading=false}
 }
 function maybeLoadMoreFeed(){if(!currentUser||feedLoading||!feedHasMore||document.body.classList.contains('chat-page-open'))return;const nearBottom=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-650;if(nearBottom)loadFeed(false)}
 window.addEventListener('scroll',()=>{if(feedRefreshTimer)clearTimeout(feedRefreshTimer);feedRefreshTimer=setTimeout(maybeLoadMoreFeed,120)},{passive:true});
