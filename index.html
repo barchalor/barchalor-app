@@ -441,6 +441,36 @@ body.chat-page-open #backToFeedButton{white-space:nowrap;min-width:max-content}
  body.chat-page-open .conversation-item{min-height:68px;padding:11px!important}
 }
 
+
+/* Mobile notification panel: keep it fully inside the visible screen. */
+@media (max-width: 700px) {
+  #notificationPanel {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 84px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 104px) !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 1000 !important;
+    margin: 0 !important;
+  }
+  #notificationPanel .notification-panel-head,
+  #notificationPanel .notification-item {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  #notificationPanel .notification-panel-head {
+    position: sticky;
+    top: -13px;
+    z-index: 2;
+    background: #fff;
+    padding: 8px 0;
+  }
+}
 </style>
 </head>
 <body>
