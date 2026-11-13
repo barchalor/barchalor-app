@@ -493,6 +493,67 @@ body.chat-page-open #backToFeedButton{white-space:nowrap;min-width:max-content}
 @media(prefers-reduced-motion:reduce){#barchalorSplash,#barchalorSplash .splash-loader:after{transition:none;animation:none}}
 </style>
 
+<style id="barchalor-standard-modernization">
+
+/* BARCHALOR STANDARD UI POLISH — presentation-only overrides; application logic unchanged. */
+:root{
+  --red:#df3153;--brand:#df3153;--brand-dark:#b91f40;--bg:#f7f6f7;
+  --text:#241d21;--muted:#786d72;--line:#eee5e8;--brand-soft:#fff0f3;
+  --shadow:0 10px 30px rgba(44,18,27,.065);--radius:18px;
+}
+body{background:linear-gradient(180deg,#fff8f9 0,#f7f6f7 340px);color:var(--text);font-size:15px}
+header{min-height:70px;padding:10px max(14px,calc((100% - 1320px)/2));border-bottom:1px solid #f0e6e9;box-shadow:0 5px 22px rgba(50,20,30,.055)}
+.logo{font-weight:900;letter-spacing:-1.2px}
+.layout{align-items:start;gap:22px;padding-top:24px;padding-bottom:40px}
+.panel,.composer,.post,#chatPanel{border:1px solid rgba(235,222,226,.9);box-shadow:var(--shadow)}
+.panel{border-radius:18px}
+.composer,.post{border-radius:18px}
+.primary{background:linear-gradient(135deg,#ed526c,#d82c50);border-radius:12px;min-height:42px}
+.secondary,.profile-trigger,.notification-button{border-radius:12px}
+input,textarea{color:var(--text)}
+input::placeholder,textarea::placeholder{color:#a3979c}
+#auth{border-radius:24px;box-shadow:0 22px 65px rgba(74,25,40,.1)}
+#auth input{min-height:48px}
+.password-toggle{z-index:2;min-width:58px}
+.post{transition:box-shadow .18s ease,transform .18s ease}
+.post:hover{box-shadow:0 14px 34px rgba(44,18,27,.09)}
+.post-actions button{min-height:40px}
+.comment-form input,.chat-search-row input,.profile-form input,.profile-form textarea{min-height:43px}
+.avatar{flex:0 0 auto}
+#chatPanel{border-radius:18px}
+.chat-window{border-radius:17px}
+.chat-messages{scrollbar-width:thin;scrollbar-color:#e7c8d0 transparent}
+.bubble{line-height:1.5}
+.bubble.mine{background:linear-gradient(135deg,#e84a67,#cc2449)!important;color:#fff!important}
+.bubble-read{display:block!important;text-align:right!important;font-size:11px!important;line-height:1.35;margin-top:4px!important;font-weight:700!important;color:#6e6267!important}
+.bubble.mine .bubble-read,.bubble.mine .bubble-read.seen,.bubble.mine .bubble-read *{color:#fff!important;opacity:1!important}
+.bubble.mine .bubble-read.seen{color:#fff!important;font-weight:850!important;text-shadow:0 1px 1px rgba(80,0,15,.18)}
+.chat-typing-indicator{background:#fff7f8;color:#766970;border-top:1px solid #f3e5e8}
+.chat-compose{gap:10px}
+.chat-compose textarea{min-height:54px;max-height:140px}
+.notification-panel{box-shadow:0 18px 50px rgba(40,15,25,.18)}
+.profile-modal{box-shadow:0 22px 70px rgba(30,10,20,.2)}
+#qcoinModal .profile-modal,#qcoinModal>div{border-radius:22px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid rgba(223,49,83,.3);outline-offset:2px}
+button:disabled{filter:saturate(.65)}
+@media(min-width:1051px){.layout{grid-template-columns:235px minmax(0,680px) 255px}.left-panel,.right-panel{min-width:0}}
+@media(max-width:1050px){.layout{grid-template-columns:minmax(0,720px);padding-left:14px;padding-right:14px}}
+@media(max-width:700px){
+  body{font-size:14px}
+  header{min-height:62px;padding:8px 10px;gap:6px}
+  .layout{padding:11px 8px 26px;gap:12px}
+  .composer,.post,#chatPanel{border-radius:15px;padding:14px}
+  .post-actions button{min-height:39px;padding:8px 4px;font-size:12px}
+  #auth{margin:24px auto;padding:24px 18px}
+  #chatPanel{padding:0!important}
+  body.chat-page-open #chatPanel{border-radius:0;box-shadow:none}
+  body.chat-page-open #chatMessages{min-height:180px}
+  body.chat-page-open #chatForm{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .profile-modal{max-height:calc(100dvh - 24px);overflow-y:auto}
+}
+@media(prefers-reduced-motion:reduce){.post{transition:none!important}}
+
+</style>
 </head>
 <body>
 <div id="barchalorSplash" role="status" aria-label="Barchalor is loading">
