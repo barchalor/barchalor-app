@@ -348,6 +348,74 @@ body.chat-page-open #chatForm{flex:0 0 auto;position:sticky;bottom:0;background:
 #loginAnnouncement .announcement-footer button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:600px){body.chat-page-open #chatPanel{padding:10px!important}body.chat-page-open #memberResults{max-height:15vh}body.chat-page-open .conversation-item{min-width:145px;padding:8px}#loginAnnouncement h2{font-size:17px;padding:15px}#loginAnnouncement .announcement-copy{padding:14px;font-size:14px}}
 
+
+
+/* Messenger redesign: keep discovery separate from the active conversation. */
+body.chat-page-open #chatPanel{box-sizing:border-box;display:flex!important;flex-direction:column;gap:0;padding:0!important;background:#f7f7f8!important;color:#20191c}
+body.chat-page-open .chat-page-heading{min-height:62px;display:flex;align-items:center;gap:14px;padding:10px clamp(14px,3vw,30px)!important;background:#fff;border-bottom:1px solid #eee;}
+body.chat-page-open .chat-page-heading h3{font-size:20px!important;font-weight:800;color:#241c20}
+body.chat-page-open .chat-page-heading #backToFeedButton{border:0;background:#fff0f3;color:#b51e3d;border-radius:12px;padding:10px 13px;font-weight:800}
+body.chat-page-open #chatPanel>.chat-search-row,
+body.chat-page-open #chatPanel>#chatStatus,
+body.chat-page-open #chatPanel>#memberResults,
+body.chat-page-open #chatPanel>h4,
+body.chat-page-open #chatPanel>#conversationList{flex:0 0 auto;margin-left:auto;margin-right:auto;width:min(100%,1080px)}
+body.chat-page-open #chatPanel>.chat-search-row{padding:14px 18px 4px;background:transparent}
+body.chat-page-open #chatPanel>#chatStatus{padding:3px 18px;color:#8b7c81;font-size:12px}
+body.chat-page-open #chatPanel>#memberResults{padding:0 18px;max-height:22vh;overflow:auto}
+body.chat-page-open #chatPanel>h4{padding:8px 18px 0;margin-top:4px!important;font-size:14px;color:#65565b}
+body.chat-page-open #conversationList{display:flex;gap:10px;overflow-x:auto;padding:8px 18px 12px;max-height:100px}
+body.chat-page-open .conversation-item{flex:0 0 190px;min-width:0;width:190px;background:#fff;border:1px solid #eee;border-radius:15px;padding:10px}
+body.chat-page-open .conversation-item.active{background:#fff0f3;border-color:#e9a5b2}
+body.chat-page-open #chatWindow{width:min(100%,1080px);margin:0 auto!important;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:#fff;border:1px solid #eee;border-bottom:0;border-radius:18px 18px 0 0;overflow:hidden;box-shadow:0 4px 22px rgba(35,15,20,.04)}
+body.chat-page-open #chatWindow[hidden]{display:none!important}
+body.chat-page-open #chatHeader{min-height:68px;padding:10px 16px;background:#fff;border-bottom:1px solid #f0e8ea;gap:12px}
+body.chat-page-open #chatHeader .member-meta strong{font-size:15px;color:#251c20}
+body.chat-page-open #chatHeader .member-meta span{font-size:12px;color:#93848a}
+body.chat-page-open #chatHeader .chat-qcoin-send{margin-left:auto;padding:9px 12px;border-radius:12px;background:#fff1d5;color:#8a5b00;font-size:13px}
+body.chat-page-open #chatHeader .small-button{font-size:13px}
+body.chat-page-open #chatMessages{flex:1 1 auto;min-height:0;height:auto!important;overflow-y:auto;padding:18px clamp(14px,3vw,28px);gap:12px;background:#f7f5f6}
+body.chat-page-open .bubble{max-width:min(78%,520px);padding:11px 14px;border:0;border-radius:18px 18px 18px 5px;background:#fff;color:#2c2428;box-shadow:0 1px 2px rgba(0,0,0,.05);font-size:14px;line-height:1.5}
+body.chat-page-open .bubble.mine{align-self:flex-end;border-radius:18px 18px 5px 18px;background:#df3153;color:#fff}
+body.chat-page-open .bubble-time{font-size:10px;color:#9a8d92}
+body.chat-page-open .bubble.mine .bubble-time{color:#ffe4e9}
+body.chat-page-open #chatForm{flex:0 0 auto;display:flex;align-items:flex-end;gap:10px;padding:12px 14px max(12px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #eee;position:relative;bottom:auto}
+body.chat-page-open #chatText{flex:1;min-height:46px;max-height:120px;resize:none;border:1px solid #e9dfe2;border-radius:22px;background:#f8f6f7;padding:13px 16px;font-size:14px;line-height:1.4}
+body.chat-page-open .chat-compose-bottom{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+body.chat-page-open .chat-compose-bottom label{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#fff0f3;color:#c12646;font-size:0}
+body.chat-page-open .chat-compose-bottom label:before{content:'＋';font-size:24px;line-height:1}
+body.chat-page-open .chat-compose-bottom input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+body.chat-page-open .chat-compose-bottom .muted{display:none}
+body.chat-page-open #sendChatButton{margin:0!important;min-width:48px;height:46px;padding:0 18px;border-radius:24px;font-weight:800}
+/* Once a conversation is open, show a focused chat screen instead of the directory. */
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>.chat-search-row,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#chatStatus,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#memberResults,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>h4,
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden]))>#conversationList{display:none!important}
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden])) .chat-page-heading{min-height:54px}
+body.chat-page-open #chatPanel:has(#chatWindow:not([hidden])) #chatWindow{width:100%;max-width:none;border:0;border-radius:0;box-shadow:none}
+@media(max-width:700px){
+ body.chat-page-open #chatPanel{padding:0!important}
+ body.chat-page-open .chat-page-heading{min-height:56px;padding:8px 12px!important}
+ body.chat-page-open .chat-page-heading h3{font-size:17px!important}
+ body.chat-page-open #chatPanel>.chat-search-row{padding:12px 12px 4px}
+ body.chat-page-open #chatPanel>#chatStatus{padding:3px 12px}
+ body.chat-page-open #chatPanel>#memberResults{padding:0 12px;max-height:18vh}
+ body.chat-page-open #chatPanel>h4{padding:6px 12px 0}
+ body.chat-page-open #conversationList{padding:7px 12px 10px;max-height:94px}
+ body.chat-page-open .conversation-item{flex-basis:160px;width:160px;padding:8px}
+ body.chat-page-open #chatWindow{border-radius:0}
+ body.chat-page-open #chatHeader{min-height:60px;padding:8px 12px}
+ body.chat-page-open #chatMessages{padding:14px 12px}
+ body.chat-page-open .bubble{max-width:86%;font-size:14px}
+ body.chat-page-open #chatForm{padding:9px 10px max(10px,env(safe-area-inset-bottom));gap:7px}
+ body.chat-page-open #chatText{min-height:44px;padding:11px 14px}
+ body.chat-page-open .chat-compose-bottom{gap:6px}
+ body.chat-page-open .chat-compose-bottom label{width:40px;height:40px}
+ body.chat-page-open #sendChatButton{height:42px;min-width:44px;padding:0 15px}
+}
+
 </style>
 </head>
 <body>
