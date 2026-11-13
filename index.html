@@ -670,7 +670,7 @@ async function enablePushNotifications() {
   }
 }
 
-let feedOffset=0,feedPageSize=20,feedLoading=false,feedHasMore=true,feedRefreshTimer=null;
+let feedOffset=0,feedPageSize=20,feedLoading=false,feedHasMore=true,feedRefreshTimer=null,rankedFeedQueue=[];
 let currentUser=null,signingUp=false,busy=false,likedPosts=new Set(),activeConversationId=null,activeOtherUser=null,messageChannel=null,refreshingMessages=false,presenceChannel=null,postChannel=null,postRefreshTimer=null,onlineUserIds=new Set(),myProfile=null,notificationChannel=null,notificationItems=[];
 const $=id=>document.getElementById(id); const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
 function showStatus(message,error=false){$('status').textContent=message;$('status').style.color=error?'#b42318':'#167d43'}
@@ -808,23 +808,46 @@ async function uploadImage(file,folder){if(!allowedTypes.includes(file.type))thr
 $('postForm').addEventListener('submit',async event=>{event.preventDefault();if(!currentUser||busy)return;const content=$('postText').value.trim(),file=$('postImage').files[0];if(!content&&!file){$('feedStatus').textContent='Write something or choose a photo before publishing.';return}setBusy(true);$('feedStatus').textContent='Publishing post...';try{const imageUrl=file?await uploadImage(file,'posts'):null;const {error}=await db.from('posts').insert({user_id:currentUser.id,content:content||null,image_url:imageUrl});if(error)throw error;$('postText').value='';clearImagePreview();await loadFeed()}catch(error){$('feedStatus').textContent='Could not publish: '+(error.message||'Unknown error')}finally{setBusy(false)}});
 function startPostRealtime(){if(!currentUser)return;stopPostRealtime();postChannel=db.channel('barchalor-post-feed-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},payload=>{if(!currentUser||payload.new?.user_id===currentUser.id)return;if(postRefreshTimer)clearTimeout(postRefreshTimer);postRefreshTimer=setTimeout(()=>{if(currentUser)loadFeed()},250)}).subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Post realtime unavailable:',status)})}
 function stopPostRealtime(){if(postRefreshTimer){clearTimeout(postRefreshTimer);postRefreshTimer=null}if(postChannel){db.removeChannel(postChannel);postChannel=null}}
+function feedSeenKey(){return currentUser?'barchalor_seen_posts_'+currentUser.id:''}
+function getSeenPostIds(){try{return new Set(JSON.parse(localStorage.getItem(feedSeenKey())||'[]').map(String))}catch(_){return new Set()}}
+function rememberSeenPosts(posts){try{const seen=getSeenPostIds();posts.forEach(p=>seen.add(String(p.id)));const values=[...seen];localStorage.setItem(feedSeenKey(),JSON.stringify(values.slice(-800)))}catch(_){}}
+function feedKeywords(text){return String(text||'').toLowerCase().match(/[a-z]{4,}/g)||[]}
+function rankPersonalizedFeed(posts,likes,comments){
+ const likedIds=new Set((likes||[]).filter(x=>x.user_id===currentUser.id).map(x=>String(x.post_id)));
+ const likedPosts=posts.filter(p=>likedIds.has(String(p.id)));
+ const authorAffinity=new Map();likedPosts.forEach(p=>authorAffinity.set(p.user_id,(authorAffinity.get(p.user_id)||0)+1));
+ const interests=new Map();likedPosts.forEach(p=>feedKeywords(p.content).forEach(w=>interests.set(w,(interests.get(w)||0)+1)));
+ const likeCounts=new Map(),commentCounts=new Map();(likes||[]).forEach(x=>likeCounts.set(String(x.post_id),(likeCounts.get(String(x.post_id))||0)+1));(comments||[]).forEach(x=>commentCounts.set(String(x.post_id),(commentCounts.get(String(x.post_id))||0)+1));
+ const seen=getSeenPostIds(),now=Date.now();
+ return posts.map(post=>{const ageHours=Math.max(0,(now-new Date(post.created_at).getTime())/36e5);const freshness=Math.max(0,1-ageHours/(24*14));const popularity=Math.min(1,((likeCounts.get(String(post.id))||0)*1.5+(commentCounts.get(String(post.id))||0)*2)/30);const affinity=Math.min(1,(authorAffinity.get(post.user_id)||0)/3);let topic=0,words=feedKeywords(post.content);words.forEach(w=>topic+=interests.get(w)||0);topic=Math.min(1,topic/Math.max(3,words.length*1.5));const discovery=Math.random()*0.20;const seenPenalty=seen.has(String(post.id))?0.24:1;const score=(topic*.35+affinity*.25+popularity*.20+freshness*.20+discovery)*seenPenalty;return {post,score,seen:seen.has(String(post.id)),tie:Math.random()}}).sort((a,b)=>b.score-a.score||a.tie-b.tie).map(x=>x.post);
+}
 async function loadFeed(reset=true){
  if(!currentUser||feedLoading)return;
- if(reset){feedOffset=0;feedHasMore=true;$('feed').replaceChildren();$('feedStatus').textContent='Loading posts...';}
+ if(reset){feedOffset=0;feedHasMore=true;rankedFeedQueue=[];$('feed').replaceChildren();$('feedStatus').textContent='Finding posts you may like...';}
  if(!feedHasMore){$('feedStatus').textContent='';return}
  feedLoading=true;
  try{
-  const {data:posts,error}=await db.from('posts').select('id,user_id,content,image_url,created_at').order('created_at',{ascending:false}).range(feedOffset,feedOffset+feedPageSize-1);
-  if(error)throw error;
-  if(!posts?.length){feedHasMore=false;$('feedStatus').textContent=feedOffset===0?'No posts yet. Be the first to share something!':'';return}
-  feedOffset+=posts.length;if(posts.length<feedPageSize)feedHasMore=false;
-  const ids=[...new Set(posts.map(p=>p.user_id))];
+  if(reset||!rankedFeedQueue.length){
+   const {data:posts,error}=await db.from('posts').select('id,user_id,content,image_url,created_at').order('created_at',{ascending:false}).limit(100);
+   if(error)throw error;
+   if(!posts?.length){feedHasMore=false;$('feedStatus').textContent='No posts yet. Be the first to share something!';return}
+   const postIds=posts.map(p=>p.id);
+   const [{data:likes,error:le},{data:comments,error:ce}]=await Promise.all([
+    db.from('post_likes').select('post_id,user_id').in('post_id',postIds),
+    db.from('comments').select('post_id').in('post_id',postIds)
+   ]);
+   if(le)throw le;if(ce)console.warn('Could not load comment engagement for feed ranking:',ce.message);
+   (likes||[]).filter(l=>l.user_id===currentUser.id).forEach(l=>likedPosts.add(String(l.post_id)));
+   rankedFeedQueue=rankPersonalizedFeed(posts,likes||[],comments||[]);
+  }
+  const page=rankedFeedQueue.splice(0,feedPageSize);
+  if(!page.length){feedHasMore=false;$('feedStatus').textContent='';return}
+  const ids=[...new Set(page.map(p=>p.user_id))];
   const {data:profiles,error:pe}=await db.from('profiles').select('id,username,display_name,avatar_url,bio').in('id',ids);if(pe)throw pe;
   const pmap=new Map((profiles||[]).map(p=>[p.id,p]));
-  const {data:likes,error:le}=await db.from('post_likes').select('post_id,user_id').in('post_id',posts.map(p=>p.id));if(le)throw le;
-  (likes||[]).filter(l=>l.user_id===currentUser.id).forEach(l=>likedPosts.add(String(l.post_id)));
-  for(const post of posts)renderPost(post,pmap.get(post.user_id),(likes||[]).filter(l=>String(l.post_id)===String(post.id)).length);
-  $('feedStatus').textContent='';
+  const {data:likes,error:le}=await db.from('post_likes').select('post_id,user_id').in('post_id',page.map(p=>p.id));if(le)throw le;
+  for(const post of page)renderPost(post,pmap.get(post.user_id),(likes||[]).filter(l=>String(l.post_id)===String(post.id)).length);
+  rememberSeenPosts(page);feedOffset+=page.length;feedHasMore=rankedFeedQueue.length>0;$('feedStatus').textContent='';
  }catch(error){$('feedStatus').textContent='Could not load posts: '+(error.message||'Please try again.')}finally{feedLoading=false}
 }
 function maybeLoadMoreFeed(){if(!currentUser||feedLoading||!feedHasMore||document.body.classList.contains('chat-page-open'))return;const nearBottom=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-650;if(nearBottom)loadFeed(false)}
