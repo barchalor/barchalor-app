@@ -811,8 +811,27 @@ async function sendQCoinToChatMember(button){
   if(button.disabled)return;
   if(!confirm('Send 1 Q Coin to '+(activeOtherUser.display_name||activeOtherUser.username||'this member')+'? This transfer cannot be reversed.'))return;
   button.disabled=true;
-  try{const {data,error}=await db.rpc('transfer_q_coins_to_member',{p_recipient_id:activeOtherUser.id,p_amount:1,p_request_id:crypto.randomUUID()});if(error)throw error;if(data?.success===false)throw new Error(data.message||'Transfer was not completed.');$('chatStatus').textContent='You sent 1 Q Coin successfully.';if(typeof loadQCoinWallet==='function')await loadQCoinWallet();}
-  catch(error){$('chatStatus').textContent='Q Coin transfer failed: '+error.message+'. Confirm that the member-transfer SQL migration has been installed and that you have at least 1 Q Coin.'}
+  try{
+    const requestId=crypto.randomUUID();
+    const {data,error}=await db.rpc('transfer_q_coins_to_member',{
+      p_recipient_id:activeOtherUser.id,
+      p_amount:1,
+      p_request_id:requestId
+    });
+    if(error)throw error;
+    // Never show success for an empty, malformed, or negative RPC response.
+    if(!data || data.success!==true || !data.transfer_id){
+      throw new Error(data?.message || 'Supabase did not confirm that the transfer was completed. No success was reported.');
+    }
+    if(Number.isFinite(Number(data.new_balance)))setQCoinBalance(Number(data.new_balance));
+    $('chatStatus').textContent='Transfer confirmed by Supabase: 1 Q sent to '+(activeOtherUser.display_name||activeOtherUser.username||'member')+'. Refreshing wallet…';
+    await loadQCoinWallet();
+    $('chatStatus').textContent='✅ Supabase confirmed your 1 Q Coin transfer. Your wallet has been refreshed. The recipient can refresh their wallet to see the credit.';
+  }
+  catch(error){
+    console.error('Q Coin chat transfer failed:',error);
+    $('chatStatus').textContent='❌ Q Coin transfer was not confirmed: '+(error.message||'Unknown error')+'. Check your wallet before trying again.';
+  }
   finally{button.disabled=false}
 }
 async function loadActiveMessages(){if(!activeConversationId)return;if(refreshingMessages)return;refreshingMessages=true;const box=$('chatMessages');const wasNearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80;const {data:messages,error}=await db.from('messages').select('id,conversation_id,sender_id,content,image_url,created_at').eq('conversation_id',activeConversationId).order('created_at',{ascending:true}).limit(200);if(error){box.replaceChildren();const msg=document.createElement('div');msg.className='chat-empty';msg.textContent='Could not load messages: '+error.message;box.append(msg);refreshingMessages=false;return}box.replaceChildren();if(!messages?.length){const empty=document.createElement('div');empty.className='chat-empty';empty.textContent='This is the beginning of your conversation. Say hello!';box.append(empty)}for(const m of messages){const bubble=document.createElement('div');bubble.className='bubble'+(m.sender_id===currentUser.id?' mine':'');if(m.image_url){const img=document.createElement('img');img.src=m.image_url;img.alt='Image sent in chat';img.loading='lazy';bubble.append(img)}if(m.content){const text=document.createElement('div');text.textContent=m.content;bubble.append(text)}const time=document.createElement('span');time.className='bubble-time';time.textContent=niceTime(m.created_at);bubble.append(time);box.append(bubble)}if(wasNearBottom)box.scrollTop=box.scrollHeight;refreshingMessages=false}
