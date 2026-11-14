@@ -479,6 +479,31 @@ body.chat-page-open #backToFeedButton{white-space:nowrap;min-width:max-content}
 .post-head .avatar.online::after,.online-member .avatar.online::after,.profile-card .avatar.online::after,.chat-header .avatar.online::after{right:-2px;bottom:-2px}
 
 .chat-typing-indicator{padding:5px 16px;color:#777;font-size:13px;font-style:italic;background:#f7f5f6}.bubble-read{display:block;text-align:right;font-size:11px;color:#777;margin-top:3px}.bubble-read.seen{color:#fff;font-weight:800}
+
+/* Messenger-style inbox: vertical, scrollable, unread previews and global alerts */
+.chat-nav-unread{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#c91537;color:#fff;font-size:11px;font-weight:900;vertical-align:middle;box-shadow:0 2px 6px #c9153740}
+body.chat-page-open #conversationList{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;overflow-y:auto!important;overflow-x:hidden!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:min(100%,1080px)!important;padding:10px 18px max(24px,env(safe-area-inset-bottom))!important;box-sizing:border-box;overscroll-behavior:contain;scrollbar-width:thin}
+body.chat-page-open #chatPanel:has(#chatWindow[hidden]){min-height:0!important}
+body.chat-page-open #chatPanel:has(#chatWindow[hidden])>#conversationList{display:grid!important}
+body.chat-page-open .conversation-item{display:flex!important;align-items:center!important;flex:initial!important;width:100%!important;min-width:0!important;max-width:none!important;min-height:76px;padding:12px 14px!important;border:1px solid #f0e4e7!important;border-radius:15px!important;background:#fff!important;box-sizing:border-box;gap:12px!important;text-align:left}
+body.chat-page-open .conversation-item .avatar{width:48px;height:48px;flex:0 0 48px}
+.conversation-item .member-meta{min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
+.conversation-item .member-meta strong{font-size:14px;color:#32252a;font-weight:750}
+.conversation-item .member-meta .conversation-preview{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:12px;color:#fff;background:#a91d3a;border-radius:5px;padding:3px 6px}
+.conversation-item.unread{background:#fff8f9!important;border-color:#f1c5ce!important}
+.conversation-item.unread .member-meta strong{font-weight:900;color:#24171b}
+.conversation-item.unread .member-meta .conversation-preview{color:#d0183d;font-weight:800;background:transparent;padding:0}
+.conversation-item .conversation-side{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+.conversation-item .conversation-time{font-size:10px;color:#9a858c;white-space:nowrap}
+.conversation-item .conversation-unread-dot{width:9px;height:9px;border-radius:50%;background:#d0183d;box-shadow:0 0 0 3px #ffe5eb}
+.incoming-chat-toast{position:fixed;z-index:5000;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);width:min(470px,calc(100vw - 24px));display:flex;align-items:center;gap:11px;padding:12px;background:#fff;border:1px solid #f0cbd3;border-radius:17px;box-shadow:0 12px 36px #48121f30;animation:chatToastIn .22s ease-out}
+.incoming-chat-toast[hidden]{display:none!important}
+.toast-chat-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:#ffe8ed;color:#b91c3a;font-weight:900;overflow:hidden}
+.toast-chat-copy{min-width:0;flex:1;display:grid;gap:3px}.toast-chat-copy strong,.toast-chat-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.toast-chat-copy strong{font-size:13px;color:#302127}.toast-chat-copy span{font-size:12px;color:#76656b}
+#closeIncomingChatToast{border:0;background:transparent;color:#8b747b;font-size:23px;padding:4px 8px}
+@keyframes chatToastIn{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(max-width:700px){body.chat-page-open #conversationList{padding:8px 12px max(22px,env(safe-area-inset-bottom))!important}.incoming-chat-toast{top:calc(env(safe-area-inset-top,0px) + 8px)}}
+
 </style>
 
 <style id="barchalor-splash-styles">
@@ -562,8 +587,9 @@ button:disabled{filter:saturate(.65)}
   <div class="splash-loader" aria-hidden="true"></div>
 </div>
 <header><div class="logo">barchalor</div><div class="header-actions"><div id="account"></div><button id="qcoinOpenButton" class="qcoin-header-button" type="button" aria-label="Open Q Coin wallet">🪙 <span>Q Wallet</span> <b id="qcoinHeaderBalance">—</b></button><div id="notificationWrap"><button id="notificationButton" class="notification-button" type="button" aria-label="Notifications" title="Notifications" aria-expanded="false">🔔 <span id="notificationBadge" class="notification-badge" hidden>0</span></button><div id="notificationPanel" class="notification-panel" role="region" aria-label="Notifications"><div class="notification-panel-head"><strong>Notifications</strong><div class="notification-head-actions"><button id="markNotificationsRead" type="button">Mark all read</button><button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">← Back</button></div></div><div id="notificationList"><div class="notification-empty">Loading notifications…</div></div></div></div><button id="profileButton" class="profile-trigger" style="display:none" type="button">My profile</button></div></header>
+<div id="incomingChatToast" class="incoming-chat-toast" role="status" aria-live="polite" hidden><div class="toast-chat-avatar" id="incomingChatAvatar">B</div><div class="toast-chat-copy"><strong id="incomingChatName">New message</strong><span id="incomingChatPreview"></span></div><button type="button" id="closeIncomingChatToast" aria-label="Dismiss message notification">×</button></div>
 <section id="auth"><h1>barchalor</h1><p>Your community. Your people.</p><form id="authForm"><input id="email" type="email" placeholder="Email address" autocomplete="email" required><div class="password-field"><input id="password" type="password" placeholder="Password (minimum 8 characters)" minlength="8" autocomplete="current-password" required><button id="togglePassword" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div><button id="authButton" class="primary" type="submit">Log in</button></form><span class="switch" id="switchMode">Don't have an account? Sign up</span><div id="status" role="status" aria-live="polite"></div></section>
-<section id="app"><nav id="quickChatNav" aria-label="Main navigation"><button id="feedNavButton" type="button">⌂ &nbsp; Home feed</button><button id="privateChatNavButton" type="button">▣ &nbsp; Private chat / Find people</button></nav><div class="layout"><aside class="panel left-panel"><section class="qcoin-sidebar-card"><div class="qcoin-card-top"><span>🪙 Q COIN WALLET</span><span class="qcoin-status-dot">●</span></div><div class="qcoin-sidebar-balance" id="qcoinSidebarBalance">— Q</div><div class="qcoin-sidebar-caption">Your Barchalor balance</div><button type="button" class="primary qcoin-wallet-action" id="qcoinSidebarOpen">Open wallet</button></section><h3>🌍 Your community</h3><p class="muted">Meet people, share your thoughts and join the conversation.</p><p class="muted" style="margin-top:12px">Use member search to start a private conversation.</p><h3 style="margin-top:20px">🟢 Members online</h3><div id="onlineMembers" class="online-list"><p class="muted">Connecting…</p></div></aside><main>
+<section id="app"><nav id="quickChatNav" aria-label="Main navigation"><button id="feedNavButton" type="button">⌂ &nbsp; Home feed</button><button id="privateChatNavButton" type="button">▣ &nbsp; Private chat <span id="chatNavUnreadBadge" class="chat-nav-unread" hidden>0</span> / Find people</button></nav><div class="layout"><aside class="panel left-panel"><section class="qcoin-sidebar-card"><div class="qcoin-card-top"><span>🪙 Q COIN WALLET</span><span class="qcoin-status-dot">●</span></div><div class="qcoin-sidebar-balance" id="qcoinSidebarBalance">— Q</div><div class="qcoin-sidebar-caption">Your Barchalor balance</div><button type="button" class="primary qcoin-wallet-action" id="qcoinSidebarOpen">Open wallet</button></section><h3>🌍 Your community</h3><p class="muted">Meet people, share your thoughts and join the conversation.</p><p class="muted" style="margin-top:12px">Use member search to start a private conversation.</p><h3 style="margin-top:20px">🟢 Members online</h3><div id="onlineMembers" class="online-list"><p class="muted">Connecting…</p></div></aside><main>
 
 <div class="composer"><h3 style="margin-bottom:12px">Create a post</h3><form id="postForm"><textarea id="postText" maxlength="5000" placeholder="What's on your mind? (optional if you add a photo)"></textarea><div class="upload-row"><label for="postImage"><strong>📷 Add a photo</strong></label><input id="postImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="muted">Maximum 5 MB</span></div><div id="previewWrap" class="preview-wrap"><img id="imagePreview" alt="Selected image preview"><button id="removeImage" type="button" class="secondary">Remove photo</button></div><button id="postButton" class="primary" type="submit">Publish post</button></form></div><div id="feedStatus">Loading posts...</div><div id="feed"></div><section id="chatPanel"><div class="chat-page-heading"><button type="button" id="backToFeedButton" class="secondary">← Feed</button><h3>Private messages</h3></div><div class="chat-search-row"><input id="memberSearch" type="search" placeholder="Find members by name or username" maxlength="60"><button id="searchButton" class="primary" type="button">Search</button></div><div id="chatStatus" class="chat-status" aria-live="polite">Search for a member to start chatting.</div><div id="memberResults" class="member-results"></div><h4 style="margin-top:15px">Your conversations</h4><div id="conversationList" class="conversation-list"></div><div id="chatWindow" class="chat-window" hidden><div id="chatHeader" class="chat-header"></div><div id="chatMessages" class="chat-messages" aria-live="polite"></div><div id="typingIndicator" class="chat-typing-indicator" aria-live="polite" hidden></div><form id="chatForm" class="chat-compose"><textarea id="chatText" maxlength="4000" placeholder="Write a private message..."></textarea><div class="chat-compose-bottom"><label for="chatImage">📷 Photo</label><input id="chatImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="muted">Max 5 MB</span><button id="sendChatButton" class="primary" type="submit">Send</button></div></form></div></section></main><aside class="panel right-panel"><h3>💬 Community</h3><p class="muted">Share posts and talk privately with other members.</p><h3 style="margin-top:18px">🟢 Members online</h3><div id="onlineMembersRight" class="online-list"></div></aside></div></section>
 
@@ -643,6 +669,7 @@ function openPrivateChatPage(){
   window.scrollTo({top:0,behavior:'smooth'});
   const input=document.getElementById('memberSearch');
   if(input) input.focus({preventScroll:true});
+  loadConversations();
 }
 function closePrivateChatPage(){
   document.body.classList.remove('chat-page-open');
@@ -955,7 +982,95 @@ async function loadComments(postId,container){const {data,error}=await db.from('
 $('searchButton').addEventListener('click',searchMembers);$('memberSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchMembers()}});
 async function searchMembers(){if(!currentUser)return;const term=$('memberSearch').value.trim();$('memberResults').replaceChildren();if(term.length<2){$('chatStatus').textContent='Enter at least 2 letters to search.';return}$('chatStatus').textContent='Searching members...';try{const safe=term.replace(/[,%()]/g,' ').trim();const {data,error}=await db.from('profiles').select('id,username,display_name,avatar_url,bio').neq('id',currentUser.id).or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`).limit(15);if(error)throw error;if(!data?.length){$('chatStatus').textContent='No members found. They may need to sign in once to create their profile.';return}$('chatStatus').textContent='Select a member to start a private chat.';for(const person of data){const button=document.createElement('button');button.type='button';button.className='member-result';const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const strong=document.createElement('strong');strong.textContent=person.display_name||person.username;const sub=document.createElement('span');sub.textContent='@'+person.username;meta.append(strong,sub);const start=document.createElement('span');start.textContent='Message ›';start.className='muted';button.append(av,meta,start);button.addEventListener('click',()=>startChat(person));$('memberResults').append(button)}}catch(error){$('chatStatus').textContent='Member search failed: '+error.message}}
 async function startChat(person){$('chatStatus').textContent='Opening private chat...';try{const {data,error}=await db.rpc('start_private_chat',{other_user_id:person.id});if(error)throw error;activeOtherUser=person;activeConversationId=data;await loadConversations();await openConversation(data,person)}catch(error){$('chatStatus').textContent='Could not start chat: '+error.message+'. The secure start_private_chat database function may not have been created successfully.'}}
-async function loadConversations(){if(!currentUser)return;const box=$('conversationList');box.replaceChildren();const {data:members,error}=await db.from('conversation_members').select('conversation_id,joined_at').eq('user_id',currentUser.id).order('joined_at',{ascending:false}).limit(100);if(error){box.textContent='Could not load conversations: '+error.message;return}if(!members?.length){box.innerHTML='<div class="chat-empty">No conversations yet. Search for a member above to start one.</div>';return}const ids=members.map(m=>m.conversation_id);const {data:allMembers,error:me}=await db.from('conversation_members').select('conversation_id,user_id').in('conversation_id',ids);if(me){box.textContent='Could not load conversation members: '+me.message;return}const others=(allMembers||[]).filter(m=>m.user_id!==currentUser.id);const otherIds=[...new Set(others.map(m=>m.user_id))];const {data:profiles,error:pe}=otherIds.length?await db.from('profiles').select('id,username,display_name,avatar_url,bio').in('id',otherIds):{data:[],error:null};if(pe){box.textContent='Could not load member names: '+pe.message;return}const pmap=new Map((profiles||[]).map(p=>[p.id,p]));for(const m of members){const other=others.find(x=>x.conversation_id===m.conversation_id);const person=pmap.get(other?.user_id)||{id:other?.user_id,username:'member',display_name:'Barchalor member'};const button=document.createElement('button');button.type='button';button.className='conversation-item'+(String(activeConversationId)===String(m.conversation_id)?' active':'');const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const name=document.createElement('strong');name.textContent=person.display_name||person.username;const sub=document.createElement('span');sub.textContent='@'+(person.username||'member');meta.append(name,sub);button.append(av,meta);button.addEventListener('click',()=>openConversation(m.conversation_id,person));box.append(button)}}
+let conversationRealtimeChannel=null;
+let conversationLoadInProgress=false;
+let conversationInitialised=false;
+let lastKnownIncomingMessageIds=new Set();
+let incomingToastTimer=null;
+function updateChatUnreadBadge(count){
+ const badge=$('chatNavUnreadBadge');if(!badge)return;
+ const n=Math.max(0,Number(count)||0);badge.textContent=n>99?'99+':String(n);badge.hidden=n===0;
+ const nav=$('privateChatNavButton');if(nav)nav.setAttribute('aria-label',n?`Private chat, ${n} unread messages`:'Private chat');
+}
+function showIncomingChatToast(person,preview,conversationId){
+ if(!person)return;
+ const toast=$('incomingChatToast');if(!toast)return;
+ $('incomingChatName').textContent=person.display_name||person.username||'New message';
+ $('incomingChatPreview').textContent=preview||'Sent you a message';
+ const avatar=$('incomingChatAvatar');avatar.textContent=(person.display_name||person.username||'B').trim().charAt(0).toUpperCase();
+ if(person.avatar_url){avatar.style.backgroundImage=`url("${person.avatar_url.replace(/"/g,'%22')}")`;avatar.style.backgroundSize='cover';avatar.style.backgroundPosition='center';avatar.textContent=''}else{avatar.style.backgroundImage=''}
+ toast.hidden=false;clearTimeout(incomingToastTimer);incomingToastTimer=setTimeout(()=>toast.hidden=true,6500);
+ toast.onclick=(event)=>{if(event.target.closest('#closeIncomingChatToast'))return;const item=[...$('conversationList').querySelectorAll('.conversation-item')].find(x=>x.dataset.conversationId===String(conversationId));if(item)item.click();else openPrivateChatPage()};
+}
+$('closeIncomingChatToast')?.addEventListener('click',()=>{$('incomingChatToast').hidden=true;clearTimeout(incomingToastTimer)});
+function startConversationRealtime(){
+ if(!currentUser||conversationRealtimeChannel)return;
+ conversationRealtimeChannel=db.channel('inbox-live-'+currentUser.id)
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},payload=>{
+    const msg=payload.new;if(!msg||msg.sender_id===currentUser.id)return;
+    loadConversations({notify:true,incomingMessage:msg});
+  })
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages'},()=>loadConversations())
+  .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Inbox realtime status:',status)});
+}
+async function loadConversations(options={}){
+ if(!currentUser||conversationLoadInProgress)return;
+ conversationLoadInProgress=true;
+ const box=$('conversationList');
+ try{
+  const {data:members,error}=await db.from('conversation_members').select('conversation_id,joined_at').eq('user_id',currentUser.id).order('joined_at',{ascending:false}).limit(100);
+  if(error)throw error;
+  if(!members?.length){box.replaceChildren();const empty=document.createElement('div');empty.className='chat-empty';empty.textContent='No conversations yet. Search for a member above to start one.';box.append(empty);updateChatUnreadBadge(0);return}
+  const ids=members.map(m=>m.conversation_id);
+  const {data:allMembers,error:me}=await db.from('conversation_members').select('conversation_id,user_id').in('conversation_id',ids);if(me)throw me;
+  const others=(allMembers||[]).filter(m=>m.user_id!==currentUser.id);const otherIds=[...new Set(others.map(m=>m.user_id))];
+  const {data:profiles,error:pe}=otherIds.length?await db.from('profiles').select('id,username,display_name,avatar_url,bio').in('id',otherIds):{data:[],error:null};if(pe)throw pe;
+  const pmap=new Map((profiles||[]).map(p=>[p.id,p]));
+  const {data:recentMessages,error:msgError}=await db.from('messages').select('id,conversation_id,sender_id,content,image_url,created_at,read_at').in('conversation_id',ids).order('created_at',{ascending:false}).limit(Math.min(1000,ids.length*20));
+  if(msgError)throw msgError;
+  const latestByConversation=new Map(),unreadByConversation=new Map();
+  for(const msg of (recentMessages||[])){
+    if(!latestByConversation.has(String(msg.conversation_id)))latestByConversation.set(String(msg.conversation_id),msg);
+    if(msg.sender_id!==currentUser.id&&!msg.read_at)unreadByConversation.set(String(msg.conversation_id),(unreadByConversation.get(String(msg.conversation_id))||0)+1);
+  }
+  const rows=members.map(m=>{
+   const other=others.find(x=>String(x.conversation_id)===String(m.conversation_id));
+   const person=pmap.get(other?.user_id)||{id:other?.user_id,username:'member',display_name:'Barchalor member'};
+   const latest=latestByConversation.get(String(m.conversation_id));
+   return {member:m,person,latest,unread:unreadByConversation.get(String(m.conversation_id))||0};
+  }).sort((a,b)=>new Date(b.latest?.created_at||b.member.joined_at||0)-new Date(a.latest?.created_at||a.member.joined_at||0));
+  const totalUnread=rows.reduce((sum,row)=>sum+row.unread,0);updateChatUnreadBadge(totalUnread);
+  if(options.notify&&options.incomingMessage){
+    const msg=options.incomingMessage;
+    if(!lastKnownIncomingMessageIds.has(String(msg.id))&&String(msg.conversation_id)!==String(activeConversationId)){
+      const row=rows.find(r=>String(r.member.conversation_id)===String(msg.conversation_id));
+      if(row)showIncomingChatToast(row.person,msg.content||(msg.image_url?'📷 Photo':'New message'),msg.conversation_id);
+    }
+  }
+  const frag=document.createDocumentFragment();
+  for(const row of rows){
+   const {member:m,person,latest,unread}=row;
+   const button=document.createElement('button');button.type='button';button.dataset.conversationId=String(m.conversation_id);
+   button.className='conversation-item'+(String(activeConversationId)===String(m.conversation_id)?' active':'')+(unread?' unread':'');
+   const av=makeAvatar(person);av.dataset.userId=person.id;
+   const meta=document.createElement('div');meta.className='member-meta';
+   const name=document.createElement('strong');name.textContent=person.display_name||person.username||'Barchalor member';
+   const preview=document.createElement('span');preview.className='conversation-preview';
+   if(latest){preview.textContent=(latest.sender_id===currentUser.id?'You: ':'')+(latest.content|| (latest.image_url?'📷 Photo':'Message'));}
+   else preview.textContent='Start a conversation';
+   const side=document.createElement('span');side.className='conversation-side';
+   const time=document.createElement('span');time.className='conversation-time';time.textContent=latest?.created_at?niceTime(latest.created_at):'';side.append(time);
+   if(unread){const dot=document.createElement('span');dot.className='conversation-unread-dot';dot.setAttribute('aria-label',`${unread} unread messages`);side.append(dot)}
+   meta.append(name,preview);button.append(av,meta,side);
+   button.addEventListener('click',()=>openConversation(m.conversation_id,person));frag.append(button);
+   if(latest&&latest.sender_id!==currentUser.id)lastKnownIncomingMessageIds.add(String(latest.id));
+  }
+  box.replaceChildren(frag);
+  conversationInitialised=true;
+  startConversationRealtime();
+ }catch(error){console.error('Conversation load failed:',error);box.textContent='Could not load conversations: '+error.message}
+ finally{conversationLoadInProgress=false}
+}
 async function openConversation(conversationId,person){activeConversationId=conversationId;activeOtherUser=person;stopMessageRealtime();document.body.classList.add('chat-conversation-open');const backButton=$('backToFeedButton');if(backButton)backButton.textContent='← Conversations';$('chatWindow').hidden=false;$('chatHeader').replaceChildren();const av=makeAvatar(person);av.dataset.userId=person.id;const meta=document.createElement('div');meta.className='member-meta';const name=document.createElement('strong');name.textContent=person.display_name||person.username||'Barchalor member';const username=document.createElement('span');username.textContent='@'+(person.username||'member');meta.append(name,username);const refresh=document.createElement('button');refresh.className='small-button';refresh.type='button';refresh.textContent='Refresh';refresh.addEventListener('click',loadActiveMessages);const sendCoin=document.createElement('button');sendCoin.type='button';sendCoin.className='chat-qcoin-send';sendCoin.textContent='🪙 Send 1 Q';sendCoin.addEventListener('click',()=>sendQCoinToChatMember(sendCoin));$('chatHeader').append(av,meta,sendCoin,refresh);await loadActiveMessages();startMessageRealtime();await loadConversations();$('chatStatus').textContent='Private chat with '+(person.display_name||person.username||'member')+'.'}
 async function sendQCoinToChatMember(button){
   if(!currentUser||!activeOtherUser||!activeConversationId)return;
