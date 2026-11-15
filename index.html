@@ -614,6 +614,7 @@ button:disabled{filter:saturate(.65)}
   <section id="stageAdminPanel" class="stage-card" hidden>
     <div class="stage-section-heading"><div><h3>🛡️ Stage Administration</h3><p class="muted">Manage applications, Saturday shows, artist slots and featured artists.</p></div><span class="stage-status">ADMIN</span></div>
     <div id="stageAdminStatus" class="chat-status" role="status"></div>
+    <div class="stage-admin-box"><h4>🔐 Secure streaming connection test</h4><p class="muted">This checks whether your signed-in Barchalor account can reach the secure token function. It will not start a broadcast or create a paid stream.</p><button id="stageTokenConnectionTest" class="secondary" type="button">Test secure connection</button><div id="stageTokenConnectionResult" class="chat-status" role="status" aria-live="polite"></div></div>
     <div id="stageOwnerTools" hidden class="stage-admin-box"><h4>👑 Trusted administrators</h4><p class="muted">Only the Stage Owner can appoint or remove administrators.</p><form id="stageAdminAddForm" class="stage-admin-inline"><input id="stageAdminUserId" placeholder="Administrator's Auth User UUID" required><button class="primary" type="submit">Appoint admin</button></form><div id="stageAdminList"></div></div>
     <div class="stage-admin-box"><h4>📨 Artist applications</h4><div id="stageAdminApplications" class="stage-admin-list">Loading applications…</div></div>
     <div class="stage-admin-box"><h4>📅 Create Saturday show</h4><form id="stageEventForm" class="stage-form"><label>Show title<input id="stageEventTitle" maxlength="100" value="Barchalor Stage" required></label><label>Saturday date<input id="stageEventDate" type="date" required></label><button class="primary" type="submit">Create show</button></form></div>
@@ -1282,6 +1283,25 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
  const say=(msg)=>{if(el('stageAdminStatus'))el('stageAdminStatus').textContent=msg};
  async function checkStageRole(){try{const [a,o]=await Promise.all([db.rpc('is_barchalor_stage_admin'),db.rpc('is_barchalor_stage_owner')]);if(a.error)throw a.error;if(o.error)throw o.error;stageIsAdmin=!!a.data;stageIsOwner=!!o.data;el('stageAdminPanel').hidden=!stageIsAdmin;el('stageOwnerTools').hidden=!stageIsOwner;if(stageIsAdmin)await loadAdminData()}catch(err){console.warn('Stage role check:',err.message);el('stageAdminPanel').hidden=true}}
  function safeText(v){return String(v??'')}
+ el('stageTokenConnectionTest')?.addEventListener('click',async()=>{
+  const button=el('stageTokenConnectionTest');
+  const result=el('stageTokenConnectionResult');
+  button.disabled=true;button.textContent='Testing…';
+  result.textContent='Sending a signed-in test request. No broadcast will start.';
+  try{
+   const {data,error}=await db.functions.invoke('barchalor-stage-token',{body:{slot_id:'00000000-0000-4000-8000-000000000000',mode:'viewer'}});
+   if(error){
+    let detail=error.message||'Request failed.';
+    try{const context=error.context;if(context&&typeof context.json==='function'){const payload=await context.json();detail=payload.error||payload.message||detail;}}catch(_){}
+    result.textContent='Connection test result: '+detail;
+   }else if(data?.error){
+    result.textContent='Connection test result: '+data.error;
+   }else{
+    result.textContent='Unexpected response received. No broadcast was started.';
+   }
+  }catch(err){result.textContent='Connection test failed: '+(err?.message||String(err));}
+  finally{button.disabled=false;button.textContent='Test secure connection';}
+ });
  async function loadAdminData(){if(!stageIsAdmin)return;try{const usageBox=el('stageUsageSummary');if(usageBox){try{const month=new Date();const monthStart=new Date(Date.UTC(month.getUTCFullYear(),month.getUTCMonth(),1)).toISOString().slice(0,10);const {data:usage,error:usageErr}=await db.from('barchalor_stage_stream_usage').select('usage_minutes').gte('usage_month',monthStart.slice(0,7)+'-01');if(usageErr)throw usageErr;const total=(usage||[]).reduce((sum,row)=>sum+Number(row.usage_minutes||0),0);usageBox.textContent='Recorded Agora usage this month: '+total.toFixed(2)+' minutes. Free allowance reference: 10,000 minutes/month. This is a recorded total only, not a live provider meter.'}catch(usageError){usageBox.textContent='Usage records are not available yet: '+usageError.message}} 
   const {data:apps,error:ae}=await db.from('barchalor_stage_applications').select('id,user_id,full_name,artist_name,category,location,bio,sample_url,reason,status,created_at').order('created_at',{ascending:false}).limit(100);if(ae)throw ae;
   const box=el('stageAdminApplications');box.innerHTML='';(apps||[]).forEach(a=>{const row=document.createElement('div');row.className='stage-admin-row';const info=document.createElement('div');const title=document.createElement('strong');title.textContent=a.artist_name+' · '+a.category;const sub=document.createElement('small');sub.textContent=a.full_name+' · '+a.location+' · '+a.status;const bio=document.createElement('small');bio.textContent=a.bio;info.append(title,sub,bio);if(a.sample_url){const link=document.createElement('a');link.href=a.sample_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Sample';info.append(link)}row.append(info);if(a.status==='pending'){const actions=document.createElement('div');['approved','rejected'].forEach(st=>{const b=document.createElement('button');b.className=st==='rejected'?'secondary stage-admin-danger':'primary';b.textContent=st==='approved'?'Approve':'Reject';b.onclick=()=>reviewApplication(a.id,st);actions.append(b)});row.append(actions)}box.append(row)});if(!apps?.length)empty(box,'No artist applications yet.');
