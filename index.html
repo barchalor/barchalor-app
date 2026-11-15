@@ -1289,7 +1289,7 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
   button.disabled=true;button.textContent='Testing…';
   result.textContent='Sending a signed-in test request. No broadcast will start.';
   try{
-   const {data,error}=await db.functions.invoke('barchalor-stage-token',{body:{slot_id:'00000000-0000-4000-8000-000000000000',mode:'viewer'}});
+   const {data,error}=await db.functions.invoke('barchalor-stage-token',{body:{slot_id:'3ada5ca4-7b1c-4ee1-94f8-60f17d8e131a',mode:'viewer'}});
    if(error){
     let detail=error.message||'Request failed.';
     try{const context=error.context;if(context&&typeof context.json==='function'){const payload=await context.json();detail=payload.error||payload.message||detail;}}catch(_){}
