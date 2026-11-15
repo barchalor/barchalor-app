@@ -1295,7 +1295,29 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
  el('stageEventForm')?.addEventListener('submit',async e=>{e.preventDefault();if(!stageIsAdmin)return;const date=el('stageEventDate').value;if(!date)return;const starts=new Date(date+'T19:00:00+01:00');if(starts.getDay()!==6){say('Please choose a Saturday.');return}try{const {data,error}=await db.from('barchalor_stage_events').insert({title:el('stageEventTitle').value.trim(),starts_at:starts.toISOString(),status:'draft',created_by:currentUser.id}).select().single();if(error)throw error;say('Saturday show created. Add artists, then publish the lineup.');await loadAdminData();el('stageAdminEvent').value=data.id;await loadAdminSlots()}catch(err){say('Could not create show: '+err.message)}});
  el('stageAdminEvent')?.addEventListener('change',loadAdminSlots);
  el('stageAddSlot')?.addEventListener('click',async()=>{if(!stageIsAdmin)return;const eventId=el('stageAdminEvent').value,artist=el('stageAdminArtist').value,date=adminEvents.find(x=>x.id===eventId)?.starts_at,time=el('stageAdminTime').value,duration=Number(el('stageAdminDuration').value);if(!eventId||!artist||!date||!time){say('Choose a show, approved artist and start time.');return}if(!Number.isInteger(duration)||duration<1||duration>120){say('Duration must be between 1 and 120 minutes.');return}const d=new Date(date);const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);const starts=new Date(localDate+'T'+time+':00+01:00');try{const {error}=await db.from('barchalor_stage_slots').insert({event_id:eventId,artist_id:artist,starts_at:starts.toISOString(),duration_minutes:duration,status:'upcoming'});if(error)throw error;say('Artist added to the lineup.');await loadAdminSlots()}catch(err){say('Could not add artist: '+err.message)}});
- el('stagePublishEvent')?.addEventListener('click',async()=>{const id=el('stageAdminEvent').value;if(!id)return;const {count,error:ce}=await db.from('barchalor_stage_slots').select('*',{count:'exact',head:true}).eq('event_id',id);if(ce){say(ce.message);return}if(!count||count>15){say('A published show must have between 1 and 15 artists.');return}const {error}=await db.from('barchalor_stage_events').update({status:'announced'}).eq('id',id);if(error)say(error.message);else{say('Lineup published! Members can now see the schedule.');await loadAdminData();await loadStage()}});
+ el('stagePublishEvent')?.addEventListener('click',async(e)=>{
+  e.preventDefault();
+  const button=el('stagePublishEvent');
+  const id=el('stageAdminEvent')?.value;
+  if(!stageIsAdmin){say('Your account is not being recognized as a Stage administrator. Please sign in with the Stage Owner or an appointed Stage Admin account.');return;}
+  if(!id){say('Please create a Saturday show first, then select it in the Select show box.');return;}
+  button.disabled=true;button.textContent='Publishing…';say('Checking the selected show and artist lineup…');
+  try{
+   const {count,error:countError}=await db.from('barchalor_stage_slots').select('id',{count:'exact',head:true}).eq('event_id',id);
+   if(countError)throw countError;
+   if(!count||count<1){say('This show has no artists scheduled yet. Add at least one approved artist before publishing.');return;}
+   if(count>15){say('This show has '+count+' artists. A published show can have no more than 15.');return;}
+   say('Publishing lineup…');
+   const {data,error:updateError}=await db.from('barchalor_stage_events').update({status:'announced'}).eq('id',id).select('id,status').maybeSingle();
+   if(updateError)throw updateError;
+   if(!data){throw new Error('Supabase did not return an updated show. The event may not be editable by this account. Please check the Stage events UPDATE permission.');}
+   say('Lineup published successfully. Refreshing the Stage page…');
+   await loadAdminData();
+   await loadStage();
+   say('Lineup published! Members can now see the schedule.');
+  }catch(err){console.error('Publish lineup failed:',err);say('Could not publish lineup: '+(err?.message||String(err)));}
+  finally{button.disabled=false;button.textContent='Publish lineup';}
+ });
  el('stageSetFeatured')?.addEventListener('click',async()=>{const artist=el('stageFeaturedArtist').value;if(!artist)return;try{const week=new Date();const day=(week.getDay()+6)%7;week.setDate(week.getDate()-day);const weekStart=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos'}).format(week);const {error:oldErr}=await db.from('barchalor_stage_featured').update({is_current:false}).eq('is_current',true);if(oldErr)throw oldErr;const {error}=await db.from('barchalor_stage_featured').upsert({artist_id:artist,week_start:weekStart,is_current:true,selected_by:currentUser.id},{onConflict:'artist_id,week_start'});if(error)throw error;say('Featured Artist updated. Previous selection is now in the Hall of Fame.');await loadStage()}catch(err){say('Could not set Featured Artist: '+err.message)}});
  async function setEventStatus(status){const id=el('stageAdminEvent').value;if(!id)return;const {error}=await db.from('barchalor_stage_events').update({status}).eq('id',id);if(error)say(error.message);else{say('Show status updated to '+status+'.');await loadAdminData();await loadStage()}}
  el('stageMarkLive')?.addEventListener('click',()=>setEventStatus('live'));el('stageCompleteEvent')?.addEventListener('click',()=>setEventStatus('completed'));
