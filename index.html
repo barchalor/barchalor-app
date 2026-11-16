@@ -623,7 +623,7 @@ button:disabled{filter:saturate(.65)}
     <div class="stage-admin-box"><h4>🌟 Select Featured Artist</h4><div class="stage-admin-inline"><label>Approved artist<select id="stageFeaturedArtist"></select></label><button id="stageSetFeatured" class="primary" type="button">Set Featured Artist</button></div></div>
     <div class="stage-admin-box"><h4>📊 Streaming usage monitor</h4><p class="muted">Free-first protection: this monitor reads recorded provider usage. Broadcasting stays disabled until secure usage reporting and automatic limits are connected.</p><div id="stageUsageSummary" class="chat-status">Loading usage records…</div></div><div class="stage-admin-box"><h4>🎬 Show controls</h4><p class="muted">Mark the show as live or completed. Live video streaming and the five-minute no-show automation are not activated in this phase.</p><div class="stage-admin-inline"><button id="stageMarkLive" class="primary" type="button">Mark show LIVE</button><button id="stageCompleteEvent" class="secondary" type="button">Complete show</button></div></div>
   </section>
-  <div class="stage-card" id="rtcTestJoinCard"><h3>📡 Temporary Stage connection test</h3><p class="muted">The Stage Owner creates a test session and shares its session ID with the approved artist. The artist joins as broadcaster; the owner joins as viewer. Use HTTPS and allow camera/microphone access when prompted.</p><label>Test session ID<input id="rtcTestSessionId" type="text" autocomplete="off" placeholder="Paste the test session ID"></label><div class="stage-admin-inline" style="margin-top:10px"><button id="rtcJoinTest" class="primary" type="button">Join test session</button><button id="rtcLeaveTest" class="secondary" type="button" disabled>Leave test</button></div><div id="rtcTestStatus" class="chat-status" role="status" aria-live="polite">Not connected.</div><div class="stage-admin-inline" style="align-items:flex-start;margin-top:12px"><div style="flex:1;min-width:220px"><strong>Your camera (artist only)</strong><div id="rtcLocalVideo" style="width:100%;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div><div style="flex:1;min-width:220px"><strong>Artist video (owner viewer)</strong><div id="rtcRemoteVideo" style="width:100%;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div></div></div>
+  <div class="stage-card" id="rtcTestJoinCard"><h3>📡 Temporary Stage connection test</h3><p class="muted">The Stage Owner creates a test session and shares its session ID with the approved artist. The artist joins as broadcaster; the owner joins as viewer. Use HTTPS and allow camera/microphone access when prompted.</p><label>Test session ID<input id="rtcTestSessionId" type="text" autocomplete="off" placeholder="Paste the test session ID"></label><div class="stage-admin-inline" style="margin-top:10px"><button id="rtcJoinTest" class="primary" type="button">Join test session</button><button id="rtcLeaveTest" class="secondary" type="button" disabled>Leave test</button></div><div id="rtcTestStatus" class="chat-status" role="status" aria-live="polite">Not connected.</div><div class="stage-admin-inline" style="align-items:flex-start;margin-top:12px"><div style="flex:1;min-width:220px"><strong>Your camera (artist only)</strong><div id="rtcLocalVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div><div style="flex:1;min-width:220px"><strong>Artist video (owner viewer)</strong><div id="rtcRemoteVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div></div></div>
   <div class="stage-note">Admin scheduling and lineup management are available to authorized Stage administrators. Live video broadcasting, Q Coin gifts, push reminders and automatic five-minute no-show handling require a separate streaming and notification integration; this page does not start a live broadcast yet.</div>
   <button id="stageBackToFeed" class="secondary" type="button">← Back to Home feed</button>
 </section>
@@ -1344,11 +1344,60 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    await rtcClient.setClientRole(isArtist?'host':'audience');
    await rtcClient.join(data.appId,data.channelName,data.token,data.uid);
    if(isArtist){
-    rtcStatus('Connected as approved artist. Requesting camera and microphone permission…');
-    rtcLocalTracks=await AgoraRTC.createMicrophoneAndCameraTracks();
-    const localBox=el('rtcLocalVideo');localBox.innerHTML='';rtcLocalTracks[1].play(localBox);
+    rtcStatus('Connected as approved artist. Starting microphone…');
+    // Create audio and video independently so a camera failure cannot be
+    // hidden by a successful combined microphone/camera request.
+    const audioTrack=await AgoraRTC.createMicrophoneAudioTrack({
+     encoderConfig:'speech_standard'
+    });
+    rtcLocalTracks=[audioTrack];
+    rtcStatus('Microphone ready. Opening the front-facing camera…');
+
+    let videoTrack=null;
+    let cameraError=null;
+    try{
+     videoTrack=await AgoraRTC.createCameraVideoTrack({
+      facingMode:'user',
+      encoderConfig:'480p_1'
+     });
+    }catch(firstCameraError){
+     cameraError=firstCameraError;
+     // Some Android/browser camera implementations do not accept facingMode.
+     // Retry with the SDK's default available camera before reporting failure.
+     try{
+      videoTrack=await AgoraRTC.createCameraVideoTrack({encoderConfig:'480p_1'});
+     }catch(secondCameraError){
+      const firstMsg=firstCameraError?.message||String(firstCameraError);
+      const secondMsg=secondCameraError?.message||String(secondCameraError);
+      throw new Error('Microphone is working, but the camera could not start. First attempt: '+firstMsg+'; retry: '+secondMsg);
+     }
+    }
+
+    if(!videoTrack)throw new Error(cameraError?.message||'The camera did not return a video track.');
+    rtcLocalTracks.push(videoTrack);
+    const mediaTrack=videoTrack.getMediaStreamTrack?.();
+    if(mediaTrack && mediaTrack.readyState!=='live'){
+     throw new Error('The camera track was created but is not live (state: '+mediaTrack.readyState+').');
+    }
+    if(mediaTrack && mediaTrack.enabled===false)mediaTrack.enabled=true;
+
+    const localBox=el('rtcLocalVideo');
+    localBox.innerHTML='';
+    videoTrack.play(localBox);
+    rtcStatus('Camera opened. Checking local video preview…');
+    await new Promise(resolve=>setTimeout(resolve,1200));
+
+    const previewVideo=localBox.querySelector('video');
+    if(!previewVideo){
+     throw new Error('The camera track started, but the local video preview element was not created.');
+    }
+    if(previewVideo.videoWidth===0 || previewVideo.videoHeight===0){
+     throw new Error('The camera was opened, but it is not delivering video frames yet. Check that no other app is using the camera, then retry.');
+    }
+
+    rtcStatus('Camera preview is active. Publishing microphone and camera…');
     await rtcClient.publish(rtcLocalTracks);
-    rtcStatus('SUCCESS: Artist is broadcasting camera and microphone on the temporary test channel. Ask the Stage Owner to join as viewer.');
+    rtcStatus('SUCCESS: Camera preview is active and the artist audio/video tracks were published to the temporary test channel. Ask the Stage Owner to join as viewer.');
    }else{
     rtcStatus('Connected as Stage Owner viewer. Waiting for the artist to join and publish video/audio…');
    }
