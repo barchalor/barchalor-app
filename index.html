@@ -504,6 +504,20 @@ body.chat-page-open .conversation-item .avatar{width:48px;height:48px;flex:0 0 4
 @keyframes chatToastIn{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
 @media(max-width:700px){body.chat-page-open #conversationList{padding:8px 12px max(22px,env(safe-area-inset-bottom))!important}.incoming-chat-toast{top:calc(env(safe-area-inset-top,0px) + 8px)}}
 
+
+/* Stage performance-first layout */
+.stage-performance-shell{background:#fff;border:1px solid #f1d7dd;border-radius:18px;overflow:visible;margin:14px 0 18px;box-shadow:0 8px 26px rgba(120,20,45,.08)}
+.stage-performance-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:#fff8fa;border-radius:18px 18px 0 0}
+.stage-live-label{font-size:10px;letter-spacing:.12em;font-weight:900;color:#b51e3e}
+#stagePerformanceStatus{font-weight:700;margin-top:4px}
+.stage-menu-wrap{position:relative}.stage-menu-wrap>button{width:42px;height:42px;border:1px solid #efcbd3;background:#fff;border-radius:12px;font-size:25px;color:#9f1734}
+.stage-more-menu{position:absolute;right:0;top:48px;z-index:50;min-width:190px;background:#fff;border:1px solid #edd2d8;border-radius:12px;box-shadow:0 10px 30px #0002;padding:6px}
+.stage-more-menu button{display:block;width:100%;text-align:left;padding:12px;border:0;background:#fff;border-radius:8px;color:#702035;font-weight:700}.stage-more-menu button:hover{background:#fff1f4}
+.stage-performance-panel{display:block}.stage-performance-video{width:100%;height:min(70vh,620px);min-height:280px;background:#090909;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:0 0 14px 14px}
+.stage-performance-video video{width:100%!important;height:100%!important;object-fit:contain!important}.stage-video-placeholder{color:#fff8;text-align:center;padding:24px}
+.stage-performance-controls{padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.stage-countdown{background:#fff1f4;color:#9f1734;border:1px solid #f0cbd4;border-radius:12px;padding:9px 12px;font-weight:800}.stage-admin-danger{border-color:#e7a9b6!important;color:#a20e2d!important}
+@media(max-width:600px){.stage-performance-video{height:62vh;min-height:250px}.stage-performance-controls>*{flex:1 1 100%}.stage-countdown{text-align:center}}
+
 </style>
 
 <style id="barchalor-splash-styles">
@@ -608,33 +622,35 @@ button:disabled{filter:saturate(.65)}
 <div class="composer"><h3 style="margin-bottom:12px">Create a post</h3><form id="postForm"><textarea id="postText" maxlength="5000" placeholder="What's on your mind? (optional if you add a photo)"></textarea><div class="upload-row"><label for="postImage"><strong>📷 Add a photo</strong></label><input id="postImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="muted">Maximum 5 MB</span></div><div id="previewWrap" class="preview-wrap"><img id="imagePreview" alt="Selected image preview"><button id="removeImage" type="button" class="secondary">Remove photo</button></div><button id="postButton" class="primary" type="submit">Publish post</button></form></div><div id="feedStatus">Loading posts...</div><div id="feed"></div><section id="chatPanel"><div class="chat-page-heading"><button type="button" id="backToFeedButton" class="secondary">← Feed</button><h3>Private messages</h3></div><div class="chat-search-row"><input id="memberSearch" type="search" placeholder="Find members by name or username" maxlength="60"><button id="searchButton" class="primary" type="button">Search</button></div><div id="chatStatus" class="chat-status" aria-live="polite">Search for a member to start chatting.</div><div id="memberResults" class="member-results"></div><h4 style="margin-top:15px">Your conversations</h4><div id="conversationList" class="conversation-list"></div><div id="chatWindow" class="chat-window" hidden><div id="chatHeader" class="chat-header"></div><div id="chatMessages" class="chat-messages" aria-live="polite"></div><div id="typingIndicator" class="chat-typing-indicator" aria-live="polite" hidden></div><form id="chatForm" class="chat-compose"><textarea id="chatText" maxlength="4000" placeholder="Write a private message..."></textarea><div class="chat-compose-bottom"><label for="chatImage">📷 Photo</label><input id="chatImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="muted">Max 5 MB</span><button id="sendChatButton" class="primary" type="submit">Send</button></div></form></div></section>
 <section id="stagePage" hidden aria-labelledby="stageTitle">
   <div class="stage-hero"><div class="stage-kicker">BARCHALOR ENTERTAINMENT</div><h2 id="stageTitle">🎤 Barchalor Stage</h2><p>Discover talent. Enjoy live performances. Celebrate artists.</p><div class="stage-schedule-pill">🔴 Every Saturday · 7:00 PM WAT</div></div>
-  <div class="stage-card"><div class="stage-section-heading"><div><h3>🎭 This week's performances</h3><p class="muted">Up to 15 selected artists. Watch for free.</p></div><button id="stageRefresh" class="secondary" type="button">Refresh</button></div><div id="stageEventStatus" class="chat-status">Loading the next Stage event…</div><div id="stageLineup" class="stage-lineup"><p class="muted">The next lineup will appear here when Barchalor announces it.</p></div>
-  <div id="stageProductionPanel" class="stage-admin-box" hidden style="margin-top:14px">
-    <h4>🔴 Barchalor Stage live video</h4>
-    <div id="stageProductionStatus" class="chat-status" role="status" aria-live="polite">Not connected.</div>
-    <div class="stage-admin-inline" style="align-items:flex-start">
-      <div style="flex:1;min-width:220px"><strong>Your camera (artist)</strong><div id="stageProductionLocalVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div>
-      <div style="flex:1;min-width:220px"><strong>Live artist video</strong><div id="stageProductionRemoteVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div>
+  <div class="stage-performance-shell" id="stagePerformanceShell">
+    <div class="stage-performance-top"><div><span class="stage-live-label">BARCHALOR STAGE LIVE</span><div id="stagePerformanceStatus" role="status" aria-live="polite">No artist is performing right now. Stay tuned!</div></div>
+      <div class="stage-menu-wrap"><button id="stageMoreMenuButton" type="button" aria-label="Stage menu" aria-expanded="false">⋮</button><div id="stageMoreMenu" class="stage-more-menu" hidden><button type="button" data-stage-menu="apply">Apply to Perform</button><button type="button" data-stage-menu="featured">Featured Artist</button></div></div>
     </div>
-    <button id="stageProductionLeaveViewer" class="secondary" type="button" hidden>Leave live video</button>
+    <div id="stageProductionPanel" class="stage-performance-panel" hidden>
+      <div id="stagePerformanceVideo" class="stage-performance-video"><div class="stage-video-placeholder">The artist's live performance will appear here.</div></div>
+      <div class="stage-performance-controls"><div id="stageProductionStatus" class="chat-status" role="status" aria-live="polite">Not connected.</div><div id="stagePerformerCountdown" class="stage-countdown" hidden>Time remaining: <strong id="stageCountdownValue">15:00</strong></div>
+        <button id="stageGiftQCoinButton" class="secondary qcoin-gift-button" type="button" disabled title="Secure Stage gifting is not connected yet">🎁 Gift 1 Q Coin</button>
+        <button id="stageProductionLeaveViewer" class="secondary" type="button" hidden>Leave live video</button>
+        <button id="stageAdminStopPerformance" class="secondary stage-admin-danger" type="button" hidden>Stop Performance</button>
+      </div>
+    </div>
   </div>
-  <p class="stage-note">🔔 Select “Remind Me” beside an artist to save a reminder. Live video is being connected to the production Stage controls. Q Coin gifts remain disabled until secure gift processing is installed.</p></div>
+  <p class="stage-note">🔔 Select “Remind Me” beside an artist to save a reminder. Watching Stage is free.</p></div>
+
+  <div class="stage-card"><div class="stage-section-heading"><div><h3>🎭 This week's performances</h3><p class="muted">Up to 15 selected artists. Watch for free.</p></div><button id="stageRefresh" class="secondary" type="button">Refresh</button></div><div id="stageEventStatus" class="chat-status">Loading the next Stage event…</div><div id="stageLineup" class="stage-lineup"><p class="muted">The next lineup will appear here when Barchalor announces it.</p></div>
   <div class="stage-card"><h3>🌟 Featured Artist of the Week</h3><div id="stageFeatured" class="stage-featured"><p class="muted">The featured artist will appear here after an administrator selects them.</p></div></div>
   <div class="stage-card"><h3>🏆 BARCHALOR STAGE HALL OF FAME</h3><p class="muted">Celebrating past Featured Artists.</p><div id="stageHallOfFame" class="stage-hall"><p class="muted">Past Featured Artists will be listed here.</p></div></div>
   <div class="stage-card"><div class="stage-section-heading"><div><h3>🎙️ Apply to perform</h3><p class="muted">Anyone with talent can apply. Only Barchalor-approved artists can perform.</p></div></div><form id="stageApplicationForm" class="stage-form"><label>Full name<input id="stageFullName" maxlength="100" required></label><label>Artist / stage name<input id="stageArtistName" maxlength="80" required></label><label>Performance category<select id="stageCategory" required><option value="">Choose a category</option><option>Musician / Singer</option><option>Comedian</option><option>Spoken word / Poetry</option><option>Dancer</option><option>Instrumentalist</option><option>Other talent</option></select></label><label>Location<input id="stageLocation" maxlength="100" placeholder="City or state" required></label><label>Short biography<textarea id="stageBio" maxlength="600" rows="3" required placeholder="Tell us about your talent"></textarea></label><label>Sample performance link (optional)<input id="stageSample" type="url" maxlength="500" placeholder="https://..."></label><label>Why would you like to perform?<textarea id="stageReason" maxlength="600" rows="3" required></textarea></label><label class="stage-consent"><input id="stageTerms" type="checkbox" required> I confirm this application is accurate and understand that submitting it does not guarantee a performance slot.</label><button id="stageApplyButton" class="primary" type="submit">Submit application</button><div id="stageApplyStatus" class="chat-status" role="status" aria-live="polite"></div></form></div>
   <section id="stageAdminPanel" class="stage-card" hidden>
     <div class="stage-section-heading"><div><h3>🛡️ Stage Administration</h3><p class="muted">Manage applications, Saturday shows, artist slots and featured artists.</p></div><span class="stage-status">ADMIN</span></div>
     <div id="stageAdminStatus" class="chat-status" role="status"></div>
-    <div class="stage-admin-box"><h4>🔐 Secure streaming connection test</h4><p class="muted">This checks Agora token generation using a separate temporary test channel. Only the Stage Owner can run it. It will not start a broadcast or use a scheduled performance.</p><button id="stageTokenConnectionTest" class="secondary" type="button">Test Agora token generation</button><div id="stageTokenConnectionResult" class="chat-status" role="status" aria-live="polite"></div></div>
-    <div id="stageOwnerTools" hidden class="stage-admin-box"><h4>🧪 Create temporary live connection test</h4><p class="muted">Choose an approved artist. This creates a private test channel that expires automatically after 20 minutes. It does not use a scheduled Stage slot.</p><label class="stage-admin-field">Approved artist<select id="rtcTestArtistSelect"><option value="">Loading approved artists…</option></select></label><button id="rtcCreateTestSession" class="primary" type="button">Create temporary test session</button><div id="rtcCreateTestResult" class="chat-status" role="status" aria-live="polite"></div><h4 style="margin-top:16px">👑 Trusted administrators</h4><p class="muted">Only the Stage Owner can appoint or remove administrators.</p><form id="stageAdminAddForm" class="stage-admin-inline"><input id="stageAdminUserId" placeholder="Administrator's Auth User UUID" required><button class="primary" type="submit">Appoint admin</button></form><div id="stageAdminList"></div></div>
+    <div id="stageOwnerTools" hidden class="stage-admin-box"><h4>👑 Trusted administrators</h4><p class="muted">Only the Stage Owner can appoint or remove administrators.</p><form id="stageAdminAddForm" class="stage-admin-inline"><input id="stageAdminUserId" placeholder="Administrator's Auth User UUID" required><button class="primary" type="submit">Appoint admin</button></form><div id="stageAdminList"></div></div>
     <div class="stage-admin-box"><h4>📨 Artist applications</h4><div id="stageAdminApplications" class="stage-admin-list">Loading applications…</div></div>
     <div class="stage-admin-box"><h4>📅 Create Saturday show</h4><form id="stageEventForm" class="stage-form"><label>Show title<input id="stageEventTitle" maxlength="100" value="Barchalor Stage" required></label><label>Saturday date<input id="stageEventDate" type="date" required></label><button class="primary" type="submit">Create show</button></form></div>
     <div class="stage-admin-box"><h4>🎭 Schedule approved artists</h4><label class="stage-admin-field">Select show<select id="stageAdminEvent"></select></label><div class="stage-admin-inline"><label>Artist<select id="stageAdminArtist"></select></label><label>Start time (WAT)<input id="stageAdminTime" type="time" value="19:00"></label><label>Duration (minutes)<input id="stageAdminDuration" type="number" min="1" max="120" value="15"></label><button id="stageAddSlot" class="primary" type="button">Add artist</button></div><button id="stagePublishEvent" class="secondary" type="button">Publish lineup</button><div id="stageAdminSlots" class="stage-admin-list"></div></div>
     <div class="stage-admin-box"><h4>🌟 Select Featured Artist</h4><div class="stage-admin-inline"><label>Approved artist<select id="stageFeaturedArtist"></select></label><button id="stageSetFeatured" class="primary" type="button">Set Featured Artist</button></div></div>
     <div class="stage-admin-box"><h4>📊 Streaming usage monitor</h4><p class="muted">Free-first protection: this monitor reads recorded provider usage. Broadcasting stays disabled until secure usage reporting and automatic limits are connected.</p><div id="stageUsageSummary" class="chat-status">Loading usage records…</div></div><div class="stage-admin-box"><h4>🎬 Show controls</h4><p class="muted">Mark the show as live or completed. Live video streaming and the five-minute no-show automation are not activated in this phase.</p><div class="stage-admin-inline"><button id="stageMarkLive" class="primary" type="button">Mark show LIVE</button><button id="stageCompleteEvent" class="secondary" type="button">Complete show</button></div></div>
   </section>
-  <div class="stage-card" id="rtcTestJoinCard"><h3>📡 Temporary Stage connection test</h3><p class="muted">The Stage Owner creates a test session and shares its session ID with the approved artist. The artist joins as broadcaster; the owner joins as viewer. Use HTTPS and allow camera/microphone access when prompted.</p><label>Test session ID<input id="rtcTestSessionId" type="text" autocomplete="off" placeholder="Paste the test session ID"></label><div class="stage-admin-inline" style="margin-top:10px"><button id="rtcJoinTest" class="primary" type="button">Join test session</button><button id="rtcLeaveTest" class="secondary" type="button" disabled>Leave test</button></div><div id="rtcTestStatus" class="chat-status" role="status" aria-live="polite">Not connected.</div><div class="stage-admin-inline" style="align-items:flex-start;margin-top:12px"><div style="flex:1;min-width:220px"><strong>Your camera (artist only)</strong><div id="rtcLocalVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div><div style="flex:1;min-width:220px"><strong>Artist video (owner viewer)</strong><div id="rtcRemoteVideo" style="width:100%;height:220px;min-height:150px;background:#171717;border-radius:10px;overflow:hidden"></div></div></div></div>
-  <div class="stage-note">Admin scheduling and lineup management are available to authorized Stage administrators. Live video broadcasting, Q Coin gifts, push reminders and automatic five-minute no-show handling require a separate streaming and notification integration; this page does not start a live broadcast yet.</div>
   <button id="stageBackToFeed" class="secondary" type="button">← Back to Home feed</button>
 </section>
 </main><aside class="panel right-panel"><h3>💬 Community</h3><p class="muted">Share posts and talk privately with other members.</p><h3 style="margin-top:18px">🟢 Members online</h3><div id="onlineMembersRight" class="online-list"></div></aside></div></section>
@@ -1293,8 +1309,9 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    }catch(_){}
    try{await stageProdClient.leave()}catch(_){}
   }
+  if(stageLivePollInterval)clearInterval(stageLivePollInterval);stageLivePollInterval=null;
   stageProdClient=null;stageProdTracks=[];stageProdSlotId=null;stageProdRole=null;
-  el('stageProductionLocalVideo').innerHTML='';el('stageProductionRemoteVideo').innerHTML='';
+  el('stagePerformanceVideo').innerHTML='<div class="stage-video-placeholder">The artist’s live performance will appear here.</div>'; 
   el('stageProductionLeaveViewer').hidden=true;
  }
  async function productionToken(slotId,mode){
@@ -1306,12 +1323,12 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
  async function startProductionBroadcast(slotId,button){
   if(stageProdClient){prodStatus('A Stage connection is already open. Leave it before opening another performance.');return}
   if(!window.AgoraRTC){prodStatus('Agora video service did not load. Refresh the page and try again.');return}
-  button.disabled=true;showProdPanel();prodStatus('Checking your artist access and scheduled performance time…');
+  button.disabled=true;showProdPanel();el('stageAdminStopPerformance').hidden=!(stageIsAdmin||stageIsOwner);prodStatus('Checking your artist access and scheduled performance time…');
   try{
    const token=await productionToken(slotId,'host');
    stageProdClient=AgoraRTC.createClient({mode:'live',codec:'vp8'});stageProdSlotId=slotId;stageProdRole='host';
-   stageProdClient.on('user-published',async(user,mediaType)=>{try{await stageProdClient.subscribe(user,mediaType);if(mediaType==='video'){const box=el('stageProductionRemoteVideo');box.innerHTML='';user.videoTrack.play(box)}if(mediaType==='audio')user.audioTrack.play()}catch(err){prodStatus('Viewer subscription issue: '+(err?.message||err))}});
-   stageProdClient.on('user-unpublished',()=>{el('stageProductionRemoteVideo').innerHTML='Artist video is temporarily unavailable.'});
+   stageProdClient.on('user-published',async(user,mediaType)=>{try{await stageProdClient.subscribe(user,mediaType);if(mediaType==='video'){const box=el('stagePerformanceVideo');box.innerHTML='';user.videoTrack.play(box)}if(mediaType==='audio')user.audioTrack.play()}catch(err){prodStatus('Viewer subscription issue: '+(err?.message||err))}});
+   stageProdClient.on('user-unpublished',()=>{el('stagePerformanceVideo').innerHTML='<div class="stage-video-placeholder">Artist video is temporarily unavailable.</div>'});
    await stageProdClient.setClientRole('host');
    await stageProdClient.join(token.appId,token.channelName,token.token,token.uid);
    prodStatus('Connected. Opening your microphone…');
@@ -1322,7 +1339,7 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    catch(first){try{video=await AgoraRTC.createCameraVideoTrack({encoderConfig:'480p_1'})}catch(second){throw new Error('Microphone works, but camera could not start: '+(second?.message||second))}}
    stageProdTracks.push(video);
    const media=video.getMediaStreamTrack?.();if(media&&media.readyState!=='live')throw new Error('Camera track is not live.');if(media&&media.enabled===false)media.enabled=true;
-   const local=el('stageProductionLocalVideo');local.innerHTML='';video.play(local);
+   const local=el('stagePerformanceVideo');local.innerHTML='';video.play(local);
    await new Promise(resolve=>setTimeout(resolve,1000));
    const preview=local.querySelector('video');if(!preview||!preview.videoWidth||!preview.videoHeight)throw new Error('Camera preview is not delivering video. Check camera permission and retry.');
    prodStatus('Camera is ready. Publishing audio and video…');
@@ -1332,6 +1349,7 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    if(controlError){let message=controlError.message||'Could not activate the performance.';try{const c=controlError.context;if(c?.json){const j=await c.json();message=j.error||j.message||message}}catch(_){}throw new Error(message)}
    if(!control?.success)throw new Error(control?.error||'The server did not activate the performance.');
    prodStatus('🔴 You are LIVE! Your camera and microphone are broadcasting.');
+   startStageCountdown(slotId,new Date().toISOString(),token.duration_minutes||15);monitorStageSession(slotId);el('stagePerformanceStatus').textContent='🔴 Artist is performing live now';
    await loadStage();
   }catch(err){await leaveProductionRtc();prodStatus('Could not start your performance: '+(err?.message||String(err)));}
   finally{button.disabled=false;}
@@ -1342,32 +1360,42 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    const {data,error}=await db.functions.invoke('barchalor-stage-live-control',{body:{action:'end',slot_id:slotId}});
    if(error){let message=error.message||'Could not end the performance.';try{const c=error.context;if(c?.json){const j=await c.json();message=j.error||j.message||message}}catch(_){}throw new Error(message)}
    if(!data?.success)throw new Error(data?.error||'The server did not confirm that the performance ended.');
-   await leaveProductionRtc();prodStatus('Performance ended successfully.');await loadStage();
+   await leaveProductionRtc();stopStageCountdown();el('stagePerformanceStatus').textContent='No artist is performing right now. Stay tuned!';prodStatus('Performance ended successfully.');await loadStage();
   }catch(err){prodStatus('Could not end the performance: '+(err?.message||String(err)));}
   finally{button.disabled=false;}
  }
  async function watchProductionLive(slotId,button){
   if(stageProdClient){prodStatus('A Stage connection is already open. Leave it before watching another performance.');showProdPanel();return}
   if(!window.AgoraRTC){showProdPanel();prodStatus('Agora video service did not load. Refresh the page and try again.');return}
-  button.disabled=true;showProdPanel();prodStatus('Connecting to the live performance…');
+  button.disabled=true;showProdPanel();el('stageAdminStopPerformance').hidden=!(stageIsAdmin||stageIsOwner);prodStatus('Connecting to the live performance…');
   try{
    const token=await productionToken(slotId,'viewer');
    stageProdClient=AgoraRTC.createClient({mode:'live',codec:'vp8'});stageProdSlotId=slotId;stageProdRole='viewer';
-   stageProdClient.on('user-published',async(user,mediaType)=>{try{await stageProdClient.subscribe(user,mediaType);if(mediaType==='video'){const box=el('stageProductionRemoteVideo');box.innerHTML='';user.videoTrack.play(box)}if(mediaType==='audio')user.audioTrack.play()}catch(err){prodStatus('Could not play the live stream: '+(err?.message||err))}});
-   stageProdClient.on('user-unpublished',()=>{el('stageProductionRemoteVideo').innerHTML='The artist has paused the video.'});
-   stageProdClient.on('user-left',()=>{el('stageProductionRemoteVideo').innerHTML='The artist has left the live channel.'});
+   stageProdClient.on('user-published',async(user,mediaType)=>{try{await stageProdClient.subscribe(user,mediaType);if(mediaType==='video'){const box=el('stagePerformanceVideo');box.innerHTML='';user.videoTrack.play(box)}if(mediaType==='audio')user.audioTrack.play()}catch(err){prodStatus('Could not play the live stream: '+(err?.message||err))}});
+   stageProdClient.on('user-unpublished',()=>{el('stagePerformanceVideo').innerHTML='<div class="stage-video-placeholder">The artist has paused the video.</div>'});
+   stageProdClient.on('user-left',()=>{el('stagePerformanceVideo').innerHTML='<div class="stage-video-placeholder">The artist has left the live channel.</div>'});
    await stageProdClient.setClientRole('audience');
    await stageProdClient.join(token.appId,token.channelName,token.token,token.uid);
    prodStatus('Connected to Barchalor Stage. Waiting for the artist audio and video…');
-   el('stageProductionLeaveViewer').hidden=false;
+   monitorStageSession(slotId);el('stageProductionLeaveViewer').hidden=false;el('stageAdminStopPerformance').hidden=!(stageIsAdmin||stageIsOwner);
   }catch(err){await leaveProductionRtc();prodStatus('Could not join the live performance: '+(err?.message||String(err)));}
   finally{button.disabled=false;}
  }
  el('stageProductionLeaveViewer')?.addEventListener('click',async()=>{await leaveProductionRtc();prodStatus('You have left the live performance.');});
+
+ // Stage menu: lightweight navigation, no test tools exposed.
+ el('stageMoreMenuButton')?.addEventListener('click',()=>{const m=el('stageMoreMenu');m.hidden=!m.hidden;el('stageMoreMenuButton').setAttribute('aria-expanded',String(!m.hidden))});
+ el('stageMoreMenu')?.addEventListener('click',e=>{const b=e.target.closest('[data-stage-menu]');if(!b)return;el('stageMoreMenu').hidden=true;el('stageMoreMenuButton').setAttribute('aria-expanded','false');const target=b.dataset.stageMenu==='apply'?'stageApplicationForm':'stageFeatured';el(target)?.scrollIntoView({behavior:'smooth',block:'start'})});
+ let stageCountdownInterval=null,stageLivePollInterval=null,stageCountdownSlot=null;
+ function stopStageCountdown(){if(stageCountdownInterval)clearInterval(stageCountdownInterval);stageCountdownInterval=null;stageCountdownSlot=null;el('stagePerformerCountdown').hidden=true}
+ function startStageCountdown(slotId,startedAt,duration){stopStageCountdown();stageCountdownSlot=slotId;const end= new Date(startedAt).getTime()+Number(duration||15)*60000;const tick=async()=>{const left=Math.max(0,Math.ceil((end-Date.now())/1000));el('stageCountdownValue').textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');el('stagePerformerCountdown').hidden=false;if(left<=0){stopStageCountdown();if(stageProdRole==='host'&&stageProdSlotId===slotId){const b={disabled:false};await endProductionBroadcast(slotId,b)}}};tick();stageCountdownInterval=setInterval(tick,1000)}
+ function monitorStageSession(slotId){if(stageLivePollInterval)clearInterval(stageLivePollInterval);stageLivePollInterval=setInterval(async()=>{try{const {data:sess,error}=await db.from('barchalor_stage_live_sessions').select('status').eq('slot_id',slotId).maybeSingle();if(error)throw error;if(!sess||sess.status!=='live'){await leaveProductionRtc();stopStageCountdown();prodStatus('This performance has ended.');el('stagePerformanceStatus').textContent='No artist is performing right now. Stay tuned!';await loadStage()}}catch(err){console.warn('Stage session status check:',err.message)}},3000)}
+ async function stopLiveAsAdmin(slotId,button){if(!(stageIsAdmin||stageIsOwner))return;button.disabled=true;try{await endProductionBroadcast(slotId,button);if(stageProdSlotId!==slotId)await leaveProductionRtc()}finally{button.disabled=false}}
+ el('stageAdminStopPerformance')?.addEventListener('click',()=>{if(stageProdSlotId)stopLiveAsAdmin(stageProdSlotId,el('stageAdminStopPerformance'))});
  async function loadStage(){if(!db||!currentUser)return;el('stageEventStatus').textContent='Loading Stage schedule…';try{
   const {data:events,error}=await db.from('barchalor_stage_events').select('id,title,starts_at,status').in('status',['announced','scheduled','live']).gte('starts_at',new Date(Date.now()-86400000).toISOString()).order('starts_at',{ascending:true}).limit(5);if(error)throw error;stageEvents=events||[];
   if(!stageEvents.length){el('stageEventStatus').textContent='No upcoming Stage event has been announced yet.';empty(el('stageLineup'),'Barchalor will publish the Saturday lineup here.');}
-  else{const event=stageEvents[0];el('stageEventStatus').textContent=(event.title||'Barchalor Stage')+' · '+new Date(event.starts_at).toLocaleString('en-NG',{dateStyle:'full',timeStyle:'short',timeZone:'Africa/Lagos'});const {data:slots,error:se}=await db.from('barchalor_stage_slots').select('id,artist_id,starts_at,duration_minutes,status,profiles:artist_id(display_name,username,avatar_url)').eq('event_id',event.id).order('starts_at',{ascending:true});if(se)throw se;el('stageLineup').innerHTML='';if(!slots?.length)empty(el('stageLineup'),'The artist lineup has not been published yet.');else {const {data:myReminders,error:remErr}=await db.from('barchalor_stage_reminders').select('slot_id').eq('user_id',currentUser.id);if(remErr)throw remErr;const reminderSet=new Set((myReminders||[]).map(x=>x.slot_id));slots.forEach(slot=>{const row=document.createElement('div');row.className='stage-lineup-row';const time=document.createElement('div');time.className='stage-time';time.textContent=formatSlot(slot.starts_at);const copy=document.createElement('div');copy.className='stage-artist-copy';const name=document.createElement('strong');name.textContent=slot.profiles?.display_name||slot.profiles?.username||'Selected artist';const detail=document.createElement('span');detail.textContent=(slot.duration_minutes||15)+' minute performance';copy.append(name,detail);const status=document.createElement('span');status.className='stage-status';status.textContent=slot.status==='live'?'LIVE':slot.status==='cancelled'?'Cancelled':'Upcoming';const actions=document.createElement('div');actions.className='stage-row-actions';const remind=document.createElement('button');remind.className='secondary';remind.type='button';remind.textContent=reminderSet.has(slot.id)?'✓ Reminder set':'🔔 Remind Me';remind.disabled=slot.status==='cancelled'||slot.status==='completed';remind.onclick=async()=>{remind.disabled=true;try{if(reminderSet.has(slot.id)){const {error}=await db.from('barchalor_stage_reminders').delete().eq('slot_id',slot.id).eq('user_id',currentUser.id);if(error)throw error;reminderSet.delete(slot.id);remind.textContent='🔔 Remind Me'}else{const {error}=await db.from('barchalor_stage_reminders').insert({slot_id:slot.id,user_id:currentUser.id});if(error)throw error;reminderSet.add(slot.id);remind.textContent='✓ Reminder set'} }catch(err){alert('Could not update reminder: '+err.message)}finally{remind.disabled=false}};const gift=document.createElement('button');gift.type='button';gift.className='secondary stage-disabled';gift.textContent='🎁 Gift Q Coins';gift.disabled=true;gift.title='Q Coin artist gifts will be enabled after secure gift processing is installed.';actions.append(remind,gift);
+  else{const event=stageEvents[0];el('stageEventStatus').textContent=(event.title||'Barchalor Stage')+' · '+new Date(event.starts_at).toLocaleString('en-NG',{dateStyle:'full',timeStyle:'short',timeZone:'Africa/Lagos'});const {data:slots,error:se}=await db.from('barchalor_stage_slots').select('id,artist_id,starts_at,duration_minutes,status,profiles:artist_id(display_name,username,avatar_url)').eq('event_id',event.id).order('starts_at',{ascending:true});if(se)throw se;const liveSlot=slots.find(x=>x.status==='live');if(liveSlot){el('stagePerformanceStatus').textContent='🔴 Artist is performing live now';showProdPanel();if(currentUser.id===liveSlot.artist_id){const {data:sess}=await db.from('barchalor_stage_live_sessions').select('started_at').eq('slot_id',liveSlot.id).eq('status','live').maybeSingle();if(sess?.started_at)startStageCountdown(liveSlot.id,sess.started_at,liveSlot.duration_minutes)}else if(!stageProdClient){const autoWatch={disabled:false};watchProductionLive(liveSlot.id,autoWatch)} }else{el('stagePerformanceStatus').textContent='No artist is performing right now. Stay tuned!';if(stageProdRole!=='host'&&stageProdRole!=='viewer')el('stageProductionPanel').hidden=true}el('stageLineup').innerHTML='';if(!slots?.length)empty(el('stageLineup'),'The artist lineup has not been published yet.');else {const {data:myReminders,error:remErr}=await db.from('barchalor_stage_reminders').select('slot_id').eq('user_id',currentUser.id);if(remErr)throw remErr;const reminderSet=new Set((myReminders||[]).map(x=>x.slot_id));slots.forEach(slot=>{const row=document.createElement('div');row.className='stage-lineup-row';const time=document.createElement('div');time.className='stage-time';time.textContent=formatSlot(slot.starts_at);const copy=document.createElement('div');copy.className='stage-artist-copy';const name=document.createElement('strong');name.textContent=slot.profiles?.display_name||slot.profiles?.username||'Selected artist';const detail=document.createElement('span');detail.textContent=(slot.duration_minutes||15)+' minute performance';copy.append(name,detail);const status=document.createElement('span');status.className='stage-status';status.textContent=slot.status==='live'?'LIVE':slot.status==='cancelled'?'Cancelled':'Upcoming';const actions=document.createElement('div');actions.className='stage-row-actions';const remind=document.createElement('button');remind.className='secondary';remind.type='button';remind.textContent=reminderSet.has(slot.id)?'✓ Reminder set':'🔔 Remind Me';remind.disabled=slot.status==='cancelled'||slot.status==='completed';remind.onclick=async()=>{remind.disabled=true;try{if(reminderSet.has(slot.id)){const {error}=await db.from('barchalor_stage_reminders').delete().eq('slot_id',slot.id).eq('user_id',currentUser.id);if(error)throw error;reminderSet.delete(slot.id);remind.textContent='🔔 Remind Me'}else{const {error}=await db.from('barchalor_stage_reminders').insert({slot_id:slot.id,user_id:currentUser.id});if(error)throw error;reminderSet.add(slot.id);remind.textContent='✓ Reminder set'} }catch(err){alert('Could not update reminder: '+err.message)}finally{remind.disabled=false}};actions.append(remind);
    if(currentUser.id===slot.artist_id && ['upcoming','live'].includes(slot.status)){
     const liveButton=document.createElement('button');liveButton.type='button';liveButton.className=slot.status==='live'?'secondary stage-admin-danger':'primary';
     if(slot.status==='live'){liveButton.textContent='End Performance';liveButton.onclick=()=>endProductionBroadcast(slot.id,liveButton)}
@@ -1376,6 +1404,7 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    }else if(slot.status==='live'){
     const watch=document.createElement('button');watch.type='button';watch.className='primary';watch.textContent='▶ Watch Live';watch.onclick=()=>watchProductionLive(slot.id,watch);actions.append(watch);
    }
+   if(slot.status==='live'&&(stageIsAdmin||stageIsOwner)&&currentUser.id!==slot.artist_id){const stop=document.createElement('button');stop.type='button';stop.className='secondary stage-admin-danger';stop.textContent='Stop Performance';stop.onclick=()=>stopLiveAsAdmin(slot.id,stop);actions.append(stop)}
    row.append(time,copy,status,actions);el('stageLineup').append(row)})}}
   const {data:featured,error:fe}=await db.from('barchalor_stage_featured').select('artist_id,week_start,profiles:artist_id(display_name,username,avatar_url,bio)').eq('is_current',true).maybeSingle();if(fe)throw fe;el('stageFeatured').innerHTML='';if(featured){const card=document.createElement('div');card.className='stage-featured-card';const crown=document.createElement('span');crown.className='stage-gold-crown';crown.textContent='🏅';const copy=document.createElement('div');const strong=document.createElement('strong');strong.textContent=featured.profiles?.display_name||featured.profiles?.username||'Featured artist';const bio=document.createElement('p');bio.className='muted';bio.textContent=featured.profiles?.bio||'Barchalor Stage Featured Artist';copy.append(strong,bio);card.append(crown,copy);el('stageFeatured').append(card)}else empty(el('stageFeatured'),'The Featured Artist of the Week will be announced soon.');
   const {data:hall,error:he}=await db.from('barchalor_stage_featured').select('artist_id,week_start,profiles:artist_id(display_name,username,avatar_url)').eq('is_current',false).order('week_start',{ascending:false}).limit(20);if(he)throw he;el('stageHallOfFame').innerHTML='';if(!hall?.length)empty(el('stageHallOfFame'),'Past Featured Artists will appear here.');else hall.forEach(item=>{const row=document.createElement('div');row.className='stage-hall-row';const icon=document.createElement('span');icon.className='stage-gold-crown';icon.textContent='🏆';const copy=document.createElement('div');const name=document.createElement('strong');name.textContent=item.profiles?.display_name||item.profiles?.username||'Featured artist';const date=document.createElement('div');date.className='muted';date.textContent='Week of '+new Date(item.week_start+'T12:00:00').toLocaleDateString('en-NG',{dateStyle:'medium'});copy.append(name,date);row.append(icon,copy);el('stageHallOfFame').append(row)});
@@ -1386,130 +1415,11 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
  const say=(msg)=>{if(el('stageAdminStatus'))el('stageAdminStatus').textContent=msg};
  async function checkStageRole(){try{const [a,o]=await Promise.all([db.rpc('is_barchalor_stage_admin'),db.rpc('is_barchalor_stage_owner')]);if(a.error)throw a.error;if(o.error)throw o.error;stageIsAdmin=!!a.data;stageIsOwner=!!o.data;el('stageAdminPanel').hidden=!stageIsAdmin;el('stageOwnerTools').hidden=!stageIsOwner;if(stageIsAdmin)await loadAdminData()}catch(err){console.warn('Stage role check:',err.message);el('stageAdminPanel').hidden=true}}
  function safeText(v){return String(v??'')}
- el('stageTokenConnectionTest')?.addEventListener('click',async()=>{
-  const button=el('stageTokenConnectionTest');
-  const result=el('stageTokenConnectionResult');
-  if(!stageIsOwner){result.textContent='Only the Stage Owner can run this test.';return;}
-  button.disabled=true;button.textContent='Testing…';
-  result.textContent='Checking Agora token generation on a separate temporary channel. No broadcast will start.';
-  try{
-   const {data,error}=await db.functions.invoke('barchalor-stage-token-test',{body:{}});
-   if(error){
-    let detail=error.message||'Request failed.';
-    try{const context=error.context;if(context&&typeof context.json==='function'){const payload=await context.json();detail=payload.error||payload.message||detail;}}catch(_){}
-    result.textContent='Agora test result: '+detail;
-   }else if(data?.success && data?.tokenGenerated){
-    result.textContent='SUCCESS: Agora generated a temporary publisher token. Test channel: '+data.channelName+'. Token expires in '+data.expiresIn+' seconds. No broadcast was started.';
-   }else if(data?.error){
-    result.textContent='Agora test result: '+data.error;
-   }else{
-    result.textContent='Unexpected response received. No broadcast was started.';
-   }
-  }catch(err){result.textContent='Agora test failed: '+(err?.message||String(err));}
-  finally{button.disabled=false;button.textContent='Test Agora token generation';}
- });
- let rtcClient=null,rtcLocalTracks=[];
- const rtcStatus=(m)=>{const x=el('rtcTestStatus');if(x)x.textContent=m};
- el('rtcCreateTestSession')?.addEventListener('click',async()=>{
-  const btn=el('rtcCreateTestSession'),out=el('rtcCreateTestResult'),applicationId=el('rtcTestArtistSelect')?.value;
-  if(!stageIsOwner){out.textContent='Only the Stage Owner can create a test session.';return;}
-  if(!applicationId){out.textContent='Choose an approved artist first.';return;}
-  btn.disabled=true;out.textContent='Creating temporary test session…';
-  try{
-   const {data,error}=await db.functions.invoke('barchalor-stage-rtc-test-create',{body:{applicationId}});
-   if(error)throw error;if(!data?.success||!data?.testSession)throw new Error(data?.error||'Unexpected server response.');
-   const t=data.testSession;el('rtcTestSessionId').value=t.id;
-   out.textContent='Test session created for '+t.artistName+'. Session ID: '+t.id+'. Expires: '+new Date(t.expiresAt).toLocaleString()+'. Copy this ID and send it to the approved artist. Then both accounts can join from this section.';
-  }catch(err){out.textContent='Could not create test session: '+(err?.message||String(err));}
-  finally{btn.disabled=false;}
- });
- async function rtcLeave(){
-  try{if(rtcClient){for(const tr of rtcLocalTracks){try{tr.stop();tr.close()}catch(_){}}rtcLocalTracks=[];await rtcClient.leave();rtcClient=null;}}
-  finally{el('rtcLocalVideo').innerHTML='';el('rtcRemoteVideo').innerHTML='';el('rtcJoinTest').disabled=false;el('rtcLeaveTest').disabled=true;rtcStatus('You have left the temporary test channel.');}
- }
- el('rtcLeaveTest')?.addEventListener('click',rtcLeave);
- el('rtcJoinTest')?.addEventListener('click',async()=>{
-  const btn=el('rtcJoinTest'),testId=el('rtcTestSessionId').value.trim();
-  if(!testId){rtcStatus('Enter the test session ID shared by the Stage Owner.');return;}
-  if(!window.AgoraRTC){rtcStatus('Agora Web SDK did not load. Refresh the page and try again.');return;}
-  btn.disabled=true;rtcStatus('Checking your account and requesting a temporary connection token…');
-  try{
-   const {data,error}=await db.functions.invoke('barchalor-stage-rtc-test-token',{body:{testId}});
-   if(error){let msg=error.message||'Token request failed.';try{const c=error.context;if(c?.json){const j=await c.json();msg=j.error||j.message||msg}}catch(_){}throw new Error(msg)}
-   if(!data?.success||!data.token)throw new Error(data?.error||'The server did not return a connection token.');
-   const isArtist=data.role==='publisher';
-   rtcClient=AgoraRTC.createClient({mode:'live',codec:'vp8'});
-   rtcClient.on('user-published',async(user,mediaType)=>{try{await rtcClient.subscribe(user,mediaType);if(mediaType==='video'){const box=el('rtcRemoteVideo');box.innerHTML='';user.videoTrack.play(box)}if(mediaType==='audio')user.audioTrack.play()}catch(e){rtcStatus('Viewer subscription issue: '+(e?.message||e))}});
-   rtcClient.on('user-unpublished',()=>{el('rtcRemoteVideo').innerHTML='Artist video paused or unpublished.'});
-   rtcClient.on('user-left',()=>{el('rtcRemoteVideo').innerHTML='Artist has left the test channel.'});
-   await rtcClient.setClientRole(isArtist?'host':'audience');
-   await rtcClient.join(data.appId,data.channelName,data.token,data.uid);
-   if(isArtist){
-    rtcStatus('Connected as approved artist. Starting microphone…');
-    // Create audio and video independently so a camera failure cannot be
-    // hidden by a successful combined microphone/camera request.
-    const audioTrack=await AgoraRTC.createMicrophoneAudioTrack({
-     encoderConfig:'speech_standard'
-    });
-    rtcLocalTracks=[audioTrack];
-    rtcStatus('Microphone ready. Opening the front-facing camera…');
-
-    let videoTrack=null;
-    let cameraError=null;
-    try{
-     videoTrack=await AgoraRTC.createCameraVideoTrack({
-      facingMode:'user',
-      encoderConfig:'480p_1'
-     });
-    }catch(firstCameraError){
-     cameraError=firstCameraError;
-     // Some Android/browser camera implementations do not accept facingMode.
-     // Retry with the SDK's default available camera before reporting failure.
-     try{
-      videoTrack=await AgoraRTC.createCameraVideoTrack({encoderConfig:'480p_1'});
-     }catch(secondCameraError){
-      const firstMsg=firstCameraError?.message||String(firstCameraError);
-      const secondMsg=secondCameraError?.message||String(secondCameraError);
-      throw new Error('Microphone is working, but the camera could not start. First attempt: '+firstMsg+'; retry: '+secondMsg);
-     }
-    }
-
-    if(!videoTrack)throw new Error(cameraError?.message||'The camera did not return a video track.');
-    rtcLocalTracks.push(videoTrack);
-    const mediaTrack=videoTrack.getMediaStreamTrack?.();
-    if(mediaTrack && mediaTrack.readyState!=='live'){
-     throw new Error('The camera track was created but is not live (state: '+mediaTrack.readyState+').');
-    }
-    if(mediaTrack && mediaTrack.enabled===false)mediaTrack.enabled=true;
-
-    const localBox=el('rtcLocalVideo');
-    localBox.innerHTML='';
-    videoTrack.play(localBox);
-    rtcStatus('Camera opened. Checking local video preview…');
-    await new Promise(resolve=>setTimeout(resolve,1200));
-
-    const previewVideo=localBox.querySelector('video');
-    if(!previewVideo){
-     throw new Error('The camera track started, but the local video preview element was not created.');
-    }
-    if(previewVideo.videoWidth===0 || previewVideo.videoHeight===0){
-     throw new Error('The camera was opened, but it is not delivering video frames yet. Check that no other app is using the camera, then retry.');
-    }
-
-    rtcStatus('Camera preview is active. Publishing microphone and camera…');
-    await rtcClient.publish(rtcLocalTracks);
-    rtcStatus('SUCCESS: Camera preview is active and the artist audio/video tracks were published to the temporary test channel. Ask the Stage Owner to join as viewer.');
-   }else{
-    rtcStatus('Connected as Stage Owner viewer. Waiting for the artist to join and publish video/audio…');
-   }
-   el('rtcJoinTest').disabled=true;el('rtcLeaveTest').disabled=false;
-  }catch(err){try{if(rtcClient)await rtcLeave()}catch(_){}btn.disabled=false;rtcStatus('Connection test failed: '+(err?.message||String(err)));}
- });
  async function loadAdminData(){if(!stageIsAdmin)return;try{const usageBox=el('stageUsageSummary');if(usageBox){try{const month=new Date();const monthStart=new Date(Date.UTC(month.getUTCFullYear(),month.getUTCMonth(),1)).toISOString().slice(0,10);const {data:usage,error:usageErr}=await db.from('barchalor_stage_stream_usage').select('usage_minutes').gte('usage_month',monthStart.slice(0,7)+'-01');if(usageErr)throw usageErr;const total=(usage||[]).reduce((sum,row)=>sum+Number(row.usage_minutes||0),0);usageBox.textContent='Recorded Agora usage this month: '+total.toFixed(2)+' minutes. Free allowance reference: 10,000 minutes/month. This is a recorded total only, not a live provider meter.'}catch(usageError){usageBox.textContent='Usage records are not available yet: '+usageError.message}} 
   const {data:apps,error:ae}=await db.from('barchalor_stage_applications').select('id,user_id,full_name,artist_name,category,location,bio,sample_url,reason,status,created_at').order('created_at',{ascending:false}).limit(100);if(ae)throw ae;
   const box=el('stageAdminApplications');box.innerHTML='';(apps||[]).forEach(a=>{const row=document.createElement('div');row.className='stage-admin-row';const info=document.createElement('div');const title=document.createElement('strong');title.textContent=a.artist_name+' · '+a.category;const sub=document.createElement('small');sub.textContent=a.full_name+' · '+a.location+' · '+a.status;const bio=document.createElement('small');bio.textContent=a.bio;info.append(title,sub,bio);if(a.sample_url){const link=document.createElement('a');link.href=a.sample_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Sample';info.append(link)}row.append(info);if(a.status==='pending'){const actions=document.createElement('div');['approved','rejected'].forEach(st=>{const b=document.createElement('button');b.className=st==='rejected'?'secondary stage-admin-danger':'primary';b.textContent=st==='approved'?'Approve':'Reject';b.onclick=()=>reviewApplication(a.id,st);actions.append(b)});row.append(actions)}box.append(row)});if(!apps?.length)empty(box,'No artist applications yet.');
   const {data:ev,error:ee}=await db.from('barchalor_stage_events').select('id,title,starts_at,status').order('starts_at',{ascending:false}).limit(30);if(ee)throw ee;adminEvents=ev||[];const sel=el('stageAdminEvent');sel.innerHTML='';adminEvents.forEach(e=>{const op=document.createElement('option');op.value=e.id;op.textContent=e.title+' · '+new Date(e.starts_at).toLocaleString('en-NG',{timeZone:'Africa/Lagos'})+' · '+e.status;sel.append(op)});
-  const {data:artists,error:ar}=await db.from('barchalor_stage_applications').select('id,user_id,artist_name,category,status').eq('status','approved').order('artist_name');if(ar)throw ar;approvedArtists=artists||[];['stageAdminArtist','stageFeaturedArtist'].forEach(id=>{const x=el(id);x.innerHTML='';approvedArtists.forEach(a=>{const op=document.createElement('option');op.value=a.user_id;op.textContent=a.artist_name+' · '+a.category;x.append(op)})});const testSelect=el('rtcTestArtistSelect');if(testSelect){testSelect.innerHTML='<option value=>Choose an approved artist</option>';approvedArtists.forEach(a=>{const op=document.createElement('option');op.value=a.id;op.textContent=a.artist_name+' · '+a.category;testSelect.append(op)});if(!approvedArtists.length)testSelect.innerHTML='<option value=>No approved artists found</option>';}await loadAdminSlots();if(stageIsOwner)await loadStageAdmins();
+  const {data:artists,error:ar}=await db.from('barchalor_stage_applications').select('id,user_id,artist_name,category,status').eq('status','approved').order('artist_name');if(ar)throw ar;approvedArtists=artists||[];['stageAdminArtist','stageFeaturedArtist'].forEach(id=>{const x=el(id);x.innerHTML='';approvedArtists.forEach(a=>{const op=document.createElement('option');op.value=a.user_id;op.textContent=a.artist_name+' · '+a.category;x.append(op)})});await loadAdminSlots();if(stageIsOwner)await loadStageAdmins();
  }catch(err){say('Admin data could not load: '+err.message)}}
  async function reviewApplication(id,status){try{const {error}=await db.from('barchalor_stage_applications').update({status,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()}).eq('id',id);if(error)throw error;say('Application '+status+'.');await loadAdminData()}catch(err){say('Could not update application: '+err.message)}}
  async function loadAdminSlots(){const eventId=el('stageAdminEvent').value;const box=el('stageAdminSlots');box.innerHTML='';if(!eventId){empty(box,'Create or select a show first.');return}try{const {data,error}=await db.from('barchalor_stage_slots').select('id,artist_id,starts_at,duration_minutes,status,profiles:artist_id(display_name,username)').eq('event_id',eventId).order('starts_at');if(error)throw error;(data||[]).forEach(slot=>{const row=document.createElement('div');row.className='stage-admin-row';const info=document.createElement('span');info.textContent=formatSlot(slot.starts_at)+' · '+(slot.profiles?.display_name||slot.profiles?.username||slot.artist_id)+' · '+slot.duration_minutes+' min · '+slot.status;const del=document.createElement('button');del.className='secondary stage-admin-danger';del.textContent='Remove';del.onclick=async()=>{const {error}=await db.from('barchalor_stage_slots').delete().eq('id',slot.id);if(error)say(error.message);else await loadAdminSlots()};row.append(info,del);box.append(row)});if(!data?.length)empty(box,'No artists scheduled for this show yet.')}catch(err){say('Could not load slots: '+err.message)}}
