@@ -1311,6 +1311,7 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
   }
   if(stageLivePollInterval)clearInterval(stageLivePollInterval);stageLivePollInterval=null;
   stageProdClient=null;stageProdTracks=[];stageProdSlotId=null;stageProdRole=null;
+  const stageGiftButton=el('stageGiftQCoinButton');if(stageGiftButton){stageGiftButton.disabled=true;stageGiftButton.textContent='🎁 Gift 1 Q Coin'}
   el('stagePerformanceVideo').innerHTML='<div class="stage-video-placeholder">The artist’s live performance will appear here.</div>'; 
   el('stageProductionLeaveViewer').hidden=true;
  }
@@ -1377,11 +1378,26 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
    await stageProdClient.setClientRole('audience');
    await stageProdClient.join(token.appId,token.channelName,token.token,token.uid);
    prodStatus('Connected to Barchalor Stage. Waiting for the artist audio and video…');
-   monitorStageSession(slotId);el('stageProductionLeaveViewer').hidden=false;el('stageAdminStopPerformance').hidden=!(stageIsAdmin||stageIsOwner);
+   monitorStageSession(slotId);el('stageProductionLeaveViewer').hidden=false;el('stageAdminStopPerformance').hidden=!(stageIsAdmin||stageIsOwner);const giftButton=el('stageGiftQCoinButton');if(giftButton){giftButton.disabled=false;giftButton.title='Send 1 Q Coin to the live performer'}
   }catch(err){await leaveProductionRtc();prodStatus('Could not join the live performance: '+(err?.message||String(err)));}
   finally{button.disabled=false;}
  }
  el('stageProductionLeaveViewer')?.addEventListener('click',async()=>{await leaveProductionRtc();prodStatus('You have left the live performance.');});
+ async function giftQCoinToStageArtist(button){
+  if(!currentUser){alert('Please log in to send a Stage gift.');return}
+  if(stageProdRole!=='viewer'||!stageProdSlotId){alert('Join a live performance before sending a gift.');return}
+  if(button.disabled)return;
+  if(!confirm('Send 1 Q Coin to the artist performing live?'))return;
+  button.disabled=true;button.textContent='Sending…';
+  try{
+   const {data:session,error:sessionError}=await db.from('barchalor_stage_live_sessions').select('id').eq('slot_id',stageProdSlotId).eq('status','live').maybeSingle();
+   if(sessionError)throw sessionError;if(!session?.id)throw new Error('This performance is no longer live.');
+   const {data,error}=await db.rpc('gift_q_coin_to_stage_artist',{p_session_id:session.id,p_request_id:crypto.randomUUID()});
+   if(error)throw error;if(!data?.success)throw new Error(data?.message||'The gift could not be sent.');
+   await loadQCoinWallet();button.textContent='🎁 Gift 1 Q Coin';button.disabled=false;prodStatus(data.duplicate_request?'This gift was already processed.':'You sent 1 Q Coin to the performer.');
+  }catch(err){alert(err.message||'Could not send the Stage gift. Please try again.');button.textContent='🎁 Gift 1 Q Coin';button.disabled=stageProdRole!=='viewer'||!stageProdSlotId}
+ }
+ el('stageGiftQCoinButton')?.addEventListener('click',e=>giftQCoinToStageArtist(e.currentTarget));
 
  // Stage menu: lightweight navigation, no test tools exposed.
  el('stageMoreMenuButton')?.addEventListener('click',()=>{const m=el('stageMoreMenu');m.hidden=!m.hidden;el('stageMoreMenuButton').setAttribute('aria-expanded',String(!m.hidden))});
