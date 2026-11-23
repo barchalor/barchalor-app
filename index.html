@@ -768,7 +768,7 @@ document.getElementById('feedNavButton')?.addEventListener('click',()=>{closePri
 
 const SUPABASE_URL='https://vlxmxsghxejvirrcdtdn.supabase.co';
 const SUPABASE_KEY='sb_publishable_JKROndaY1L0GG8xjuBcSjg_xmV8TrNE';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // Securely ask the Supabase Edge Function to send a push notification.
 // The service-role key and Firebase private key must remain server-side.
@@ -805,12 +805,29 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "404904480968",
   appId: "1:404904480968:web:f53c8182ee4202dc8795fd"
 };
+const $ = id => document.getElementById(id);
 const FIREBASE_VAPID_PUBLIC_KEY = "BE8dI1SJLLD8l_pwQdsuwP-0JzW0lXonUuVQIWSWucoLsZU6IZ1weKG_1WCgAQnLQWCleMpBBB_0ovDzPLn05rs";
 let firebaseMessaging = null;
 try {
   if ("serviceWorker" in navigator && "Notification" in window && firebase?.messaging) {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseMessaging = firebase.messaging();
+    firebaseMessaging.onMessage(async payload => {
+      if (Notification.permission !== 'granted') return;
+      const title = payload?.notification?.title || payload?.data?.title || 'Barchalor';
+      const body = payload?.notification?.body || payload?.data?.body || 'You have a new notification.';
+      try {
+        const appBase = new URL('./', window.location.href);
+        const registration = await navigator.serviceWorker.getRegistration(appBase.pathname);
+        if (registration) await registration.showNotification(title, {
+          body,
+          icon: new URL('favicon.ico', appBase).href,
+          data: { url: payload?.data?.url || appBase.href }
+        });
+      } catch (notificationError) {
+        console.warn('Could not display foreground push notification:', notificationError);
+      }
+    });
   }
 } catch (error) {
   console.warn("Firebase push setup is unavailable:", error);
@@ -819,8 +836,9 @@ async function savePushSubscription() {
   if (!currentUser || !firebaseMessaging || !('serviceWorker' in navigator) || !('Notification' in window)) return false;
   if (Notification.permission !== 'granted') return false;
   if (!FIREBASE_VAPID_PUBLIC_KEY || FIREBASE_VAPID_PUBLIC_KEY.length < 50) throw new Error('Firebase Web Push public key is missing.');
-  const appBasePath = new URL('.', window.location.href).pathname;
-  const sw = await navigator.serviceWorker.register(new URL('firebase-messaging-sw.js', window.location.href), { scope: appBasePath });
+  const appBase = new URL('./', window.location.href);
+  const workerUrl = new URL('firebase-messaging-sw.js', appBase);
+  const sw = await navigator.serviceWorker.register(workerUrl.pathname, { scope: appBase.pathname });
   const token = await firebaseMessaging.getToken({ vapidKey: FIREBASE_VAPID_PUBLIC_KEY, serviceWorkerRegistration: sw });
   if (!token) throw new Error('Firebase did not return a device token.');
   const { error } = await db.from('push_subscriptions').upsert({ user_id: currentUser.id, fcm_token: token, updated_at: new Date().toISOString() }, { onConflict: 'fcm_token' });
@@ -840,24 +858,19 @@ function schedulePushPermissionPrompt() {
     return;
   }
   pushPromptTimer = setTimeout(() => {
-    if (!currentUser) return;
-    if (!('Notification' in window)) {
-      const unsupported=$('pushPermissionStatus');
-      if(unsupported)unsupported.textContent='This browser does not support web notifications. You can still use in-app notifications from the bell icon.';
-    }
-    if ('Notification' in window && Notification.permission === 'granted') return;
+    if (!currentUser || !('Notification' in window)) return;
+    if (Notification.permission === 'granted') return;
     const modal = $('pushPermissionModal');
     const status = $('pushPermissionStatus');
     const allow = $('pushPermissionAllow');
     if (!modal || !allow) return;
-    const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
-    status.textContent = permission === 'denied'
-      ? 'Notifications are blocked in your browser. Open your browser or device site settings, allow notifications for Barchalor, then reload.'
-      : permission === 'unsupported' ? 'This browser does not support web push. In-app notifications are still available from the bell icon.' : '';
-    allow.textContent = permission === 'denied' ? 'How to enable notifications' : permission === 'unsupported' ? 'Close' : 'Allow notifications';
+    status.textContent = Notification.permission === 'denied'
+      ? 'Notifications are blocked in your browser. Change Barchalor’s notification permission in your browser or device settings, then sign in again.'
+      : '';
+    allow.textContent = Notification.permission === 'denied' ? 'How to enable notifications' : 'Allow notifications';
     modal.hidden = false;
     modal.classList.add('open');
-  }, 1800);
+  }, 9000);
 }
 
 $('pushPermissionAllow')?.addEventListener('click', async () => {
@@ -865,7 +878,7 @@ $('pushPermissionAllow')?.addEventListener('click', async () => {
   const status = $('pushPermissionStatus');
   if (!currentUser) return;
   if (!('Notification' in window) || !firebaseMessaging) {
-    status.textContent = !('Notification' in window) ? 'This browser does not support web push. Use an updated Chrome browser, or continue using the in-app bell.' : 'The push service could not start. Check your internet connection and confirm firebase-messaging-sw.js is uploaded beside this HTML file.';
+    status.textContent = 'This browser does not support Barchalor push notifications. Try an updated version of Chrome.';
     return;
   }
   if (Notification.permission === 'denied') {
@@ -892,12 +905,11 @@ $('pushPermissionAllow')?.addEventListener('click', async () => {
   }
 });
 $('pushPermissionLater')?.addEventListener('click', closePushPermissionPrompt);
-$('pushPermissionModal')?.addEventListener('keydown',event=>{if(event.key==='Escape')closePushPermissionPrompt()});
 $('pushPermissionModal')?.addEventListener('click', event => { if (event.target === $('pushPermissionModal')) closePushPermissionPrompt(); });
 
 let feedOffset=0,feedPageSize=20,feedBatchSize=100,feedLoading=false,feedHasMore=true,feedRefreshTimer=null,rankedFeedQueue=[];
 let currentUser=null,signingUp=false,busy=false,likedPosts=new Set(),activeConversationId=null,activeOtherUser=null,messageChannel=null,typingChannel=null,typingStopTimer=null,messageRefreshTimer=null,lastTypingSent=0,refreshingMessages=false,presenceChannel=null,postChannel=null,postRefreshTimer=null,onlineUserIds=new Set(),myProfile=null,notificationChannel=null,notificationItems=[];
-const $=id=>document.getElementById(id); const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
+const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
 function showStatus(message,error=false){$('status').textContent=message;$('status').style.color=error?'#b42318':'#167d43'}
 function setBusy(value){busy=value;$('authButton').disabled=value;$('postButton').disabled=value}
 function escapeText(value){return String(value??'')}
@@ -913,11 +925,11 @@ $('showSignup').addEventListener('click',()=>{authMode='signup';signupStep=1;ren
 $('switchMode').addEventListener('click',()=>{if(!$('authForm').hidden){showAuthPanel('choice');showStatus('')}else{showAuthPanel('login');showStatus('')}});
 $('togglePassword').addEventListener('click',()=>{const input=$('password'),show=input.type==='password';input.type=show?'text':'password';$('togglePassword').textContent=show?'Hide':'Show';$('togglePassword').setAttribute('aria-pressed',String(show))});
 document.querySelectorAll('[data-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const input=$(btn.dataset.toggle),show=input.type==='password';input.type=show?'text':'password';btn.textContent=show?'Hide':'Show'}));
-$('signupNext1').addEventListener('click',async()=>{const first=$('signupFirstName').value.trim(),username=$('signupUsername').value.trim().toLowerCase();if(!first)return showStatus('Enter your first name.',true);if(!/^[a-z0-9_]{3,24}$/.test(username))return showStatus('Username must be 3–24 letters, numbers or underscores.',true);$('signupNext1').disabled=true;$('usernameStatus').textContent='Checking username…';try{const {data,error}=await db.from('profiles').select('id').eq('username',username).maybeSingle();if(!error&&data){$('usernameStatus').textContent='That username is already taken. Please choose another.';return}if(error){console.warn('Username availability check:',error.message);$('usernameStatus').textContent='We could not pre-check this username. We will validate it when your profile is saved.'}signupData={first_name:first,username};signupStep=2;renderSignupStep();showStatus('')}catch(e){showStatus('Could not check username: '+e.message,true)}finally{$('signupNext1').disabled=false}});
+$('signupNext1').addEventListener('click',async()=>{const first=$('signupFirstName').value.trim(),username=$('signupUsername').value.trim().toLowerCase();if(!first)return showStatus('Enter your first name.',true);if(!/^[a-z0-9_]{3,24}$/.test(username))return showStatus('Username must be 3–24 letters, numbers or underscores.',true);$('signupNext1').disabled=true;$('usernameStatus').textContent='Checking username…';try{const {data,error}=await db.from('profiles').select('id').eq('username',username).maybeSingle();if(error)throw error;if(data){$('usernameStatus').textContent='That username is already taken. Please choose another.';return}signupData={first_name:first,username};signupStep=2;renderSignupStep();showStatus('')}catch(e){showStatus('Could not check username: '+e.message,true)}finally{$('signupNext1').disabled=false}});
 $('signupUsername').addEventListener('input',()=>{clearTimeout(usernameCheckTimer);$('usernameStatus').textContent='3–24 letters, numbers or underscores. Names can repeat; usernames cannot.'});
 $('signupBack2').addEventListener('click',()=>{signupStep=1;renderSignupStep()});$('signupBack3').addEventListener('click',()=>{signupStep=2;renderSignupStep()});
 $('signupNext2').addEventListener('click',()=>{const dob=$('signupDob').value;if(!dob)return showStatus('Enter your date of birth.',true);if(new Date(dob)>=new Date())return showStatus('Date of birth must be in the past.',true);signupData.date_of_birth=dob;signupStep=3;renderSignupStep();showStatus('')});
-$('sendVerification').addEventListener('click',async()=>{const email=$('signupEmail').value.trim();if(!email||!$('signupEmail').checkValidity())return showStatus('Enter a valid email address.',true);const btn=$('sendVerification');btn.disabled=true;showStatus('Sending verification link…');try{const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:(window.location.origin+window.location.pathname),shouldCreateUser:true,data:{barchalor_first_name:signupData.first_name,barchalor_username:signupData.username,barchalor_date_of_birth:signupData.date_of_birth,barchalor_pending_signup:true}}});if(error)throw error;localStorage.setItem('barchalor_pending_signup',JSON.stringify({...signupData,email}));showStatus('Verification link sent. Open the email and click the link on this device. Then create your password.')}catch(e){showStatus(e.message||'Could not send verification link.',true)}finally{btn.disabled=false}});
+$('sendVerification').addEventListener('click',async()=>{const email=$('signupEmail').value.trim();if(!email||!$('signupEmail').checkValidity())return showStatus('Enter a valid email address.',true);const btn=$('sendVerification');btn.disabled=true;showStatus('Sending verification link…');try{const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:'https://qlitobadys-lab.github.io/barchalor-app/',shouldCreateUser:true,data:{barchalor_first_name:signupData.first_name,barchalor_username:signupData.username,barchalor_date_of_birth:signupData.date_of_birth,barchalor_pending_signup:true}}});if(error)throw error;localStorage.setItem('barchalor_pending_signup',JSON.stringify({...signupData,email}));showStatus('Verification link sent. Open the email and click the link on this device. Then create your password.')}catch(e){showStatus(e.message||'Could not send verification link.',true)}finally{btn.disabled=false}});
 $('authForm').addEventListener('submit',async event=>{event.preventDefault();if(busy)return;const email=$('email').value.trim(),password=$('password').value;if(!email||!$('email').checkValidity())return showStatus('Enter a valid email address.',true);if(!password)return showStatus('Enter your password.',true);setBusy(true);showStatus('Logging in…');try{const {error}=await db.auth.signInWithPassword({email,password});if(error)throw error;showStatus('Login successful!');await initialise()}catch(error){showStatus(error.message||'Something went wrong.',true)}finally{setBusy(false)}});
 $('finishSignup').addEventListener('click',async()=>{const password=$('newPassword').value,confirm=$('confirmPassword').value;if(password.length<8)return showStatus('Password must contain at least 8 characters.',true);if(password!==confirm)return showStatus('Your passwords do not match.',true);$('finishSignup').disabled=true;showStatus('Creating your account…');try{const {data,error}=await db.auth.updateUser({password,data:{barchalor_pending_signup:false}});if(error)throw error;const meta=data.user?.user_metadata||currentUser?.user_metadata||{};const saved=JSON.parse(localStorage.getItem('barchalor_pending_signup')||'{}');const first=meta.barchalor_first_name||saved.first_name||'';const username=meta.barchalor_username||saved.username||'';if(first&&username){const {error:profileError}=await db.from('profiles').upsert({id:data.user.id,username,display_name:first},{onConflict:'id'});if(profileError)throw profileError}localStorage.removeItem('barchalor_pending_signup');showStatus('Welcome to Barchalor!');await initialise()}catch(e){showStatus('Could not finish registration: '+e.message,true)}finally{$('finishSignup').disabled=false}});
 async function ensureProfile(user){const {data,error}=await db.from('profiles').select('id').eq('id',user.id).maybeSingle();if(error)throw error;if(data)return;const meta=user.user_metadata||{};const pending=JSON.parse(localStorage.getItem('barchalor_pending_signup')||'{}');const username=meta.barchalor_username||pending.username||('user_'+user.id.replaceAll('-','').slice(0,12));const display_name=meta.barchalor_first_name||pending.first_name||(user.email||'member').split('@')[0];const {error:insertError}=await db.from('profiles').insert({id:user.id,username,display_name});if(insertError)throw insertError}
@@ -1313,15 +1325,14 @@ function showProfileMenuTab(tab){
 }
 $('profileTabButton').addEventListener('click',()=>showProfileMenuTab('profile'));
 $('settingsTabButton').addEventListener('click',()=>showProfileMenuTab('settings'));
-$('settingsDoneButton').addEventListener('click',closeProfileEditor);
+$('settingsDoneButton').addEventListener('click',()=> $('profileModal').classList.remove('open'));
 // Profile editor: profile data is stored in the existing public.profiles table.
-$('profileButton').addEventListener('click',async event=>{event.preventDefault();showProfileMenuTab('profile');openProfileEditor();try{await loadMyProfile()}catch(error){console.warn('Profile refresh failed:',error)}});
-$('closeProfile').addEventListener('click',closeProfileEditor);
-$('profileBackButton').addEventListener('click',closeProfileEditor);
-$('profileModal').addEventListener('click',e=>{if(e.target===$('profileModal'))closeProfileEditor()});
+$('profileButton').addEventListener('click',()=>{showProfileMenuTab('profile');openProfileEditor()});
+$('closeProfile').addEventListener('click',()=> $('profileModal').classList.remove('open'));
+$('profileBackButton').addEventListener('click',()=> $('profileModal').classList.remove('open'));
+$('profileModal').addEventListener('click',e=>{if(e.target===$('profileModal'))$('profileModal').classList.remove('open')});
 async function loadMyProfile(){if(!currentUser)return;const {data,error}=await db.from('profiles').select('id,username,display_name,avatar_url,bio,last_seen_at,show_last_seen').eq('id',currentUser.id).maybeSingle();if(error){console.warn('Profile load:',error.message);return}myProfile=data||{id:currentUser.id,username:'member',display_name:'Member',avatar_url:null,bio:''};$('profileButton').style.display='inline-grid';$('profileButton').replaceChildren();if(myProfile.avatar_url){const headerAvatar=document.createElement('img');headerAvatar.src=myProfile.avatar_url;headerAvatar.alt='My profile picture';headerAvatar.onerror=()=>{if($('profileButton').contains(headerAvatar)){$('profileButton').textContent=(myProfile?.display_name||myProfile?.username||'U').trim().charAt(0).toUpperCase();$('profileButton').style.fontSize='22px';$('profileButton').style.color='#c93b4b';$('profileButton').style.fontWeight='800'}};$('profileButton').append(headerAvatar)}else{$('profileButton').textContent=(myProfile.display_name||myProfile.username||'U').trim().charAt(0).toUpperCase();$('profileButton').style.fontSize='22px';$('profileButton').style.color='#c93b4b';$('profileButton').style.fontWeight='800'}$('profileButton').title=(myProfile.display_name||'My profile')+' — Profile and Settings';$('profilePreviewName').textContent=myProfile.display_name||myProfile.username;$('profilePreviewUsername').textContent='@'+(myProfile.username||'member');$('profilePreviewBio').textContent=myProfile.bio||'Add a short bio about yourself.';$('profileAvatarPreview').replaceWith(makeAvatar(myProfile,'profile-big'));$('profileAvatarPreview').id='profileAvatarPreview';$('displayNameInput').value=myProfile.display_name||'';$('usernameInput').value=myProfile.username||'';$('bioInput').value=myProfile.bio||''}
-function openProfileEditor(){if(!currentUser)return;const modal=$('profileModal');$('profileStatus').textContent='';modal.hidden=false;modal.style.display='flex';modal.classList.add('open');document.body.style.overflow='hidden'}
-function closeProfileEditor(){const modal=$('profileModal');modal.classList.remove('open');modal.style.display='';document.body.style.overflow=''}
+function openProfileEditor(){if(!currentUser)return;$('profileStatus').textContent='';$('profileModal').classList.add('open')}
 $('avatarFile').addEventListener('change',async()=>{const file=$('avatarFile').files[0];if(!file)return;if(!allowedTypes.includes(file.type)||file.size>5*1024*1024){$('profileStatus').textContent='Choose a JPG, PNG, WEBP or GIF no larger than 5 MB.';$('avatarFile').value='';return}try{$('profileStatus').textContent='Uploading profile picture…';const url=await uploadImage(file,'avatars');const {error}=await db.from('profiles').update({avatar_url:url}).eq('id',currentUser.id);if(error)throw error;await loadMyProfile();$('profileStatus').textContent='Profile picture updated.'}catch(error){$('profileStatus').textContent='Picture upload failed: '+error.message+' Check the existing Storage upload policy if needed.'}finally{$('avatarFile').value=''}});
 $('removeAvatar').addEventListener('click',async()=>{if(!currentUser)return;$('profileStatus').textContent='Removing profile picture…';const {error}=await db.from('profiles').update({avatar_url:null}).eq('id',currentUser.id);if(error){$('profileStatus').textContent='Could not remove picture: '+error.message;return}await loadMyProfile();$('profileStatus').textContent='Profile picture removed.'});
 $('profileForm').addEventListener('submit',async e=>{e.preventDefault();if(!currentUser)return;const display_name=$('displayNameInput').value.trim(),username=$('usernameInput').value.trim().toLowerCase(),bio=$('bioInput').value.trim();if(display_name.length<1||username.length<3||!/^[a-z0-9_]+$/.test(username)){$('profileStatus').textContent='Enter a display name and a username of 3–24 letters, numbers or underscores.';return}const save=$('saveProfile');save.disabled=true;$('profileStatus').textContent='Saving profile…';try{const {data:existing,error:checkError}=await db.from('profiles').select('id').eq('username',username).neq('id',currentUser.id).maybeSingle();if(checkError)throw checkError;if(existing)throw new Error('That username is already in use. Try another one.');const {error}=await db.from('profiles').update({display_name,username,bio:bio||null}).eq('id',currentUser.id);if(error)throw error;await loadMyProfile();await loadFeed();await loadConversations();$('profileStatus').textContent='Profile saved successfully.'}catch(error){$('profileStatus').textContent='Could not save profile: '+error.message}finally{save.disabled=false}});
