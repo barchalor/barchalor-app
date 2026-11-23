@@ -1,5 +1,10 @@
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
+importScripts(
+  "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"
+);
+
+importScripts(
+  "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"
+);
 
 firebase.initializeApp({
   apiKey: "AIzaSyD74zIkwLsTjv_u_vdYqOy5Kv4pRDzd8hI",
@@ -13,19 +18,57 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || 'Barchalor';
-  const options = {
-    body: payload.notification?.body || 'You have a new notification.',
-    data: payload.data || {}
-  };
+  const title =
+    payload?.notification?.title ||
+    payload?.data?.title ||
+    "Barchalor";
 
-  self.registration.showNotification(title, options);
+  const body =
+    payload?.notification?.body ||
+    payload?.data?.body ||
+    "You have a new notification.";
+
+  self.registration.showNotification(title, {
+    body: body,
+    icon: "https://qlitobadys-lab.github.io/barchalor-app/favicon.ico",
+    badge: "https://qlitobadys-lab.github.io/barchalor-app/favicon.ico",
+    data: {
+      url:
+        payload?.data?.url ||
+        "https://qlitobadys-lab.github.io/barchalor-app/"
+    }
+  });
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
+  const target =
+    event.notification.data?.url ||
+    "https://qlitobadys-lab.github.io/barchalor-app/";
+
   event.waitUntil(
-    clients.openWindow('https://qlitobadys-lab.github.io/barchalor-app/')
+    (async () => {
+      const windows = await clients.matchAll({
+        type: "window",
+        includeUncontrolled: true
+      });
+
+      for (const client of windows) {
+        if ("focus" in client) {
+          await client.focus();
+
+          if ("navigate" in client) {
+            await client.navigate(target);
+          }
+
+          return;
+        }
+      }
+
+      if (clients.openWindow) {
+        await clients.openWindow(target);
+      }
+    })()
   );
 });
