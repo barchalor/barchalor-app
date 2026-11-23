@@ -1594,3 +1594,32 @@ button,input,textarea{touch-action:manipulation}button{transition:background .15
 #notificationPanel .notification-close:hover{background:#ffe2e7}
 @media(max-width:700px){#notificationPanel .notification-panel-head{gap:8px;align-items:center}#notificationPanel .notification-head-actions{gap:7px}#notificationPanel .notification-close{padding:8px 10px;font-size:12px}}
 </style>
+
+<script id="barchalor-auth-screen-click-fallback">
+/* Independent auth-screen navigation fallback. Keeps the two entry buttons
+   working even if an unrelated optional script fails to initialize. */
+(function(){
+  function byId(id){return document.getElementById(id)}
+  function show(which){
+    var choice=byId('authChoice'), login=byId('authForm'), signup=byId('signupWizard'), password=byId('passwordSetup'), back=byId('switchMode');
+    if(!choice||!login||!signup||!password||!back)return;
+    choice.hidden=which!=='choice';
+    login.hidden=which!=='login';
+    signup.hidden=which!=='signup';
+    password.hidden=which!=='password';
+    back.hidden=(which==='choice'||which==='password');
+    if(which==='signup'){
+      document.querySelectorAll('#signupWizard .signup-step').forEach(function(step){step.hidden=step.getAttribute('data-step')!=='1'});
+      var progress=byId('signupProgress'); if(progress)progress.textContent='Step 1 of 3';
+    }
+    if(which==='login'){var email=byId('email'); if(email)setTimeout(function(){email.focus()},50)}
+    var status=byId('status'); if(status)status.textContent='';
+  }
+  document.addEventListener('click',function(event){
+    var target=event.target; if(!target||!target.closest)return;
+    if(target.closest('#showLogin')){show('login')}
+    else if(target.closest('#showSignup')){show('signup')}
+    else if(target.closest('#switchMode')){show('login')}
+  },true);
+})();
+</script>
