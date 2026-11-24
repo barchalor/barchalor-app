@@ -771,12 +771,28 @@ const SUPABASE_KEY='sb_publishable_JKROndaY1L0GG8xjuBcSjg_xmV8TrNE';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // Securely ask the Supabase Edge Function to send a push notification.
-// The service-role key and Firebase private key must remain server-side.
+// Diagnostic logging makes it clear whether the request starts, reaches Supabase,
+// and what response the Edge Function returns. Never expose service-role or
+// Firebase private keys in this browser code.
 async function sendPushForEvent(eventType, eventId) {
+  console.log('Barchalor push started:', eventType, eventId);
   try {
-    const { data: { session }, error: sessionError } = await db.auth.getSession();
-    if (sessionError || !session?.access_token || !eventId) return;
+    const { data, error: sessionError } = await db.auth.getSession();
+    if (sessionError) {
+      console.error('Push stopped: Supabase session lookup failed:', sessionError);
+      return;
+    }
+    const session = data?.session;
+    if (!session?.access_token) {
+      console.error('Push stopped: no active login session/access token.');
+      return;
+    }
+    if (!eventId) {
+      console.error('Push stopped: missing event ID for', eventType);
+      return;
+    }
 
+    console.log('Calling Supabase notification function:', eventType, eventId);
     const response = await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
       method: 'POST',
       headers: {
@@ -786,14 +802,14 @@ async function sendPushForEvent(eventType, eventId) {
       },
       body: JSON.stringify({ event_type: eventType, event_id: eventId })
     });
-    const result = await response.json().catch(() => ({}));
+    const responseText = await response.text();
+    console.log('Push HTTP status:', response.status, response.statusText);
+    console.log('Push server response:', responseText);
     if (!response.ok) {
-      console.warn('Push notification failed:', response.status, result.error || result.message || 'Unknown error');
-    } else {
-      console.log('Push notification result:', result);
+      console.error('Push notification request was rejected by Supabase.');
     }
   } catch (error) {
-    console.warn('Push notification error:', error);
+    console.error('Push notification request error:', error);
   }
 }
 
