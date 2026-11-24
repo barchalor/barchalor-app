@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Barchalor — Connect with Everyone</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e11d48">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Barchalor">
+<style id="barchalor-brand-icon-style">
+.logo{display:flex;align-items:center;gap:8px}.logo img{width:34px;height:34px;display:block;border-radius:8px;object-fit:cover}#auth h1{display:flex;align-items:center;justify-content:center;gap:10px}#auth h1 img{width:48px;height:48px;border-radius:11px;object-fit:cover;vertical-align:middle}.splash-brand{display:flex;align-items:center;justify-content:center;gap:10px}.splash-brand .splash-mark{display:none}.splash-brand img{width:48px;height:48px;border-radius:12px;object-fit:cover}
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
@@ -604,13 +616,13 @@ button:disabled{filter:saturate(.65)}
 </head>
 <body>
 <div id="barchalorSplash" role="status" aria-label="Barchalor is loading">
-  <div class="splash-brand"><span class="splash-mark">b</span><span>barchalor</span></div>
+  <div class="splash-brand"><img src="icon-192.png" alt="Barchalor logo"><span>barchalor</span></div>
   <div class="splash-tagline">Your community. Your people.</div>
   <div class="splash-loader" aria-hidden="true"></div>
 </div>
-<header><div class="logo">barchalor</div><div class="header-actions"><div id="account"></div><button id="qcoinOpenButton" class="qcoin-header-button" type="button" aria-label="Open Q Coin wallet">🪙 <span>Q Wallet</span> <b id="qcoinHeaderBalance">—</b></button><div id="notificationWrap"><button id="notificationButton" class="notification-button" type="button" aria-label="Notifications" title="Notifications" aria-expanded="false">🔔 <span id="notificationBadge" class="notification-badge" hidden>0</span></button><div id="notificationPanel" class="notification-panel" role="region" aria-label="Notifications"><div class="notification-panel-head"><strong>Notifications</strong><div class="notification-head-actions"><button id="markNotificationsRead" type="button">Mark all read</button><button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">← Back</button></div></div><div id="notificationList"><div class="notification-empty">Loading notifications…</div></div></div></div><button id="profileButton" class="profile-trigger" style="display:none" type="button">My profile</button></div></header>
+<header><div class="logo"><img src="icon-192.png" alt="Barchalor logo">barchalor</div><div class="header-actions"><div id="account"></div><button id="qcoinOpenButton" class="qcoin-header-button" type="button" aria-label="Open Q Coin wallet">🪙 <span>Q Wallet</span> <b id="qcoinHeaderBalance">—</b></button><div id="notificationWrap"><button id="notificationButton" class="notification-button" type="button" aria-label="Notifications" title="Notifications" aria-expanded="false">🔔 <span id="notificationBadge" class="notification-badge" hidden>0</span></button><div id="notificationPanel" class="notification-panel" role="region" aria-label="Notifications"><div class="notification-panel-head"><strong>Notifications</strong><div class="notification-head-actions"><button id="markNotificationsRead" type="button">Mark all read</button><button id="closeNotifications" class="notification-close" type="button" aria-label="Close notifications">← Back</button></div></div><div id="notificationList"><div class="notification-empty">Loading notifications…</div></div></div></div><button id="profileButton" class="profile-trigger" style="display:none" type="button">My profile</button></div></header>
 <div id="incomingChatToast" class="incoming-chat-toast" role="status" aria-live="polite" hidden><div class="toast-chat-avatar" id="incomingChatAvatar">B</div><div class="toast-chat-copy"><strong id="incomingChatName">New message</strong><span id="incomingChatPreview"></span></div><button type="button" id="closeIncomingChatToast" aria-label="Dismiss message notification">×</button></div>
-<section id="auth"><h1>barchalor</h1><p>Your community. Your people.</p>
+<section id="auth"><h1><img src="icon-192.png" alt="Barchalor logo">barchalor</h1><p>Your community. Your people.</p>
 <div id="authChoice"><button id="showLogin" class="primary" type="button">Log In</button><button id="showSignup" class="secondary" type="button">Sign Up</button></div>
 <form id="authForm" hidden><input id="email" type="email" placeholder="Email address" autocomplete="email" required><div class="password-field"><input id="password" type="password" placeholder="Password" autocomplete="current-password" required><button id="togglePassword" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div><button id="authButton" class="primary" type="submit">Log in</button></form>
 <div id="signupWizard" hidden><div class="signup-progress" id="signupProgress">Step 1 of 3</div>
